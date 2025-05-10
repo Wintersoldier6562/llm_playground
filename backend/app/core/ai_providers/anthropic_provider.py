@@ -47,10 +47,15 @@ class AnthropicProvider(BaseAIProvider):
                 stream=True
             )
             async for chunk in stream:
-                if chunk.type == 'message_delta' or chunk.type == 'message':
-                    input_tokens += chunk.usage.input_tokens if chunk.usage.input_tokens else 0
-                    output_tokens += chunk.usage.output_tokens if chunk.usage.output_tokens else 0
+                if chunk.type == 'message_delta':
+                    usage = chunk.usage
+                    input_tokens += (usage.input_tokens or 0)
+                    output_tokens += (usage.output_tokens or 0)
 
+                if chunk.type == 'message_start':
+                    usage = chunk.message.usage
+                    input_tokens += (usage.input_tokens or 0)
+                    output_tokens += (usage.output_tokens or 0)
                 if chunk.type == "content_block_delta":
                     yield chunk.delta.text
             

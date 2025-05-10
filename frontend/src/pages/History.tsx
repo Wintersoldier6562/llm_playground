@@ -38,7 +38,7 @@ const ModelResponse = ({ response }: { response: any }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const modelName = MODEL_NAMES[response.model_name] || response.model_name;
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200 flex-1">
       <button
         className="w-full flex flex-col md:flex-row md:items-center justify-between px-5 py-4 cursor-pointer focus:outline-none group"
         onClick={() => setIsExpanded((v) => !v)}
@@ -55,7 +55,7 @@ const ModelResponse = ({ response }: { response: any }) => {
         <span className="ml-0 md:ml-4 text-gray-400 group-hover:text-indigo-700 transition-colors"><ChevronIcon expanded={isExpanded} /></span>
       </button>
       {isExpanded && (
-        <div className="prose max-w-none text-[#172B4D] font-mono text-sm leading-relaxed px-5 pb-5 pt-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+        <div className="prose max-w-none text-[#172B4D] font-mono text-sm leading-relaxed px-5 pb-5 pt-2 border-t border-gray-100 bg-gray-50 rounded-b-xl overflow-hidden max-h-96 overflow-auto">
           <ReactMarkdown>{response.content}</ReactMarkdown>
         </div>
       )}
@@ -96,7 +96,7 @@ export function History() {
       ) : (
         <div className="space-y-6">
           {history?.map((item: any) => (
-            <div key={item.prompt_id} className="bg-white shadow rounded-lg p-6">
+            <div key={item.prompt_id} className="bg-white shadow rounded-lg p-6 overflow-x-auto">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6">
                 <div className="flex-1">
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
@@ -137,7 +137,9 @@ export function History() {
               </div>
               <div className="flex flex-col md:flex-row gap-6">
                 {item.responses.map((response: any) => (
-                  <ModelResponse key={response.model_name} response={response} />
+                  <div key={response.model_name} className="flex-1">
+                    <ModelResponse response={response} />
+                  </div>
                 ))}
               </div>
             </div>

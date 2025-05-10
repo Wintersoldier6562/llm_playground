@@ -74,7 +74,7 @@ export const comparison = {
   },
   compare: async (prompt: string, models?: string[]) => {
     const token = localStorage.getItem('access_token');
-    const response = await fetch(`${config.apiUrl}/comparison/stream`, {
+    const response = await fetch(`${config.apiUrl}/comparison/compare`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

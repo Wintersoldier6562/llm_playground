@@ -1,24 +1,25 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Login } from './pages/Login'
 import { StreamPage } from './pages/StreamPage'
 import { History } from './pages/History'
-import { Charts } from './pages/Charts'
 import { Performance } from './pages/Performance'
 import { PrivateRoute } from './components/PrivateRoute'
 import { UserMenu } from './components/UserMenu'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from './store'
+import { logout, setAuthFromStorage } from './features/auth/authSlice'
+import { useEffect } from 'react'
 
 const queryClient = new QueryClient()
 
 function Sidebar() {
-  const { logout } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await dispatch(logout());
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout failed:', error);
@@ -73,36 +74,42 @@ function Sidebar() {
   );
 }
 
+function AuthLoader() {
+  const dispatch = useDispatch<AppDispatch>();
+  useEffect(() => {
+    dispatch(setAuthFromStorage());
+  }, [dispatch]);
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="*"
-              element={
-                <PrivateRoute>
-                  <Sidebar />
-                  <div className="ml-64 min-h-screen bg-[#F4F5F7]">
-                    <div className="flex justify-end items-center h-16 px-8">
-                      <UserMenu />
-                    </div>
-                    <Routes>
-                      <Route path="/stream" element={<StreamPage />} />
-                      <Route path="/history" element={<History />} />
-                      <Route path="/charts" element={<Charts />} />
-                      <Route path="/performance" element={<Performance />} />
-                      <Route path="*" element={<Navigate to="/stream" replace />} />
-                    </Routes>
+      <AuthLoader />
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="*"
+            element={
+              <PrivateRoute>
+                <Sidebar />
+                <div className="ml-64 min-h-screen bg-[#F4F5F7]">
+                  <div className="flex justify-end items-center h-16 px-8">
+                    <UserMenu />
                   </div>
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-        </Router>
-      </AuthProvider>
+                  <Routes>
+                    <Route path="/stream" element={<StreamPage />} />
+                    <Route path="/history" element={<History />} />
+                    <Route path="/performance" element={<Performance />} />
+                    <Route path="*" element={<Navigate to="/stream" replace />} />
+                  </Routes>
+                </div>
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </Router>
     </QueryClientProvider>
   )
 }

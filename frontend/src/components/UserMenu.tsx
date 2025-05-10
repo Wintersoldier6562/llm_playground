@@ -1,9 +1,10 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../store';
 
 export const UserMenu: React.FC = () => {
-  const { user } = useAuth(); // Assumes user object has name and email
-  const firstLetter = user?.name?.[0]?.toUpperCase() || 'U';
+  const user = useSelector((state: RootState) => state.auth.user);
+  const firstLetter = user?.full_name?.[0]?.toUpperCase() || 'U';
 
   return (
     <div className="relative flex items-center justify-end h-16">
@@ -15,7 +16,7 @@ export const UserMenu: React.FC = () => {
         {/* Tooltip/Dropdown */}
         <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
           <div className="p-4">
-            <div className="font-semibold text-gray-900">{user?.name || 'User'}</div>
+            <div className="font-semibold text-gray-900">{user?.full_name || 'User'}</div>
             <div className="text-sm text-gray-500">{user?.email || ''}</div>
           </div>
         </div>

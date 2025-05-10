@@ -75,7 +75,6 @@ The project is organized as a monorepo with two main directories:
 ### Backend
 - FastAPI
 - PostgreSQL
-- SQLAlchemy
 - Pydantic
 - Python 3.9+
 
@@ -83,7 +82,7 @@ The project is organized as a monorepo with two main directories:
 - React with TypeScript
 - Tailwind CSS
 - React Query
-- Zustand for state management
+- Redux for state
 
 ## API Documentation
 

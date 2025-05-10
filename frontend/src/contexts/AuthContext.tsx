@@ -1,3 +1,4 @@
+// DEPRECATED: This context is now replaced by Redux state management. Use Redux hooks for auth state.
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../services/api';
 

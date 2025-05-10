@@ -22,7 +22,7 @@ import json
 
 router = APIRouter()
 
-@router.post("/stream")
+@router.post("/compare")
 async def stream_comparison(
     request: ComparisonRequest,
     current_user: User = Depends(get_current_user),

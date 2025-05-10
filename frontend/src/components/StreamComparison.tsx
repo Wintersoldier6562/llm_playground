@@ -263,7 +263,7 @@ export const StreamComparison: React.FC = () => {
                     </span>
                   </div>
                   <div className="whitespace-pre-wrap">
-                    <ReactMarkdown>{response.content || 'Waiting for response...'}</ReactMarkdown>
+                    <ReactMarkdown>{response.content || ''}</ReactMarkdown>
                   </div>
                 </div>
               )}

@@ -50,11 +50,16 @@ async def login(
     
     access_token = auth_service.create_access_token(subject=user.id)
     refresh_token = auth_service.create_refresh_token(subject=user.id)
-    
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "is_active": user.is_active
+        }
     }
 
 @router.post("/logout")
@@ -102,5 +107,11 @@ async def refresh_token(
     return {
         "access_token": access_token,
         "refresh_token": new_refresh_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "is_active": user.is_active
+        }
     } 

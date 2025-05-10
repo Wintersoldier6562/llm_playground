@@ -251,22 +251,20 @@ export const StreamComparison: React.FC = () => {
                 <p className="text-red-500">{response.error}</p>
               ) : (
                 <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Tokens: {response.total_tokens || 0}
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Cost: ${(response.cost || 0).toFixed(4)}
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      Latency: {(response.latency || 0).toFixed(2)}s
+                    </span>
+                  </div>
                   <div className="whitespace-pre-wrap">
                     <ReactMarkdown>{response.content || 'Waiting for response...'}</ReactMarkdown>
                   </div>
-                  {response.content && (
-                    <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Tokens: {response.total_tokens || 0}
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Cost: ${response.cost.toFixed(4) || 0}
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Latency: {response.latency.toFixed(2) || 0}s
-                      </span>
-                    </div>
-                  )}
                 </div>
               )}
             </div>

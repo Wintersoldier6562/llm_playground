@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
@@ -24,10 +24,24 @@ class ComparisonResponse(BaseModel):
 
 class ComparisonRequest(BaseModel):
     prompt: str
-    models: Optional[List[str]] = None
+    provider_models: Optional[Dict[str, str]] = None
+    max_tokens: int
 
 class ComparisonCreateRequest(BaseModel):
     prompt_id: UUID
     prompt: str
     responses: List[ModelResponse]
     created_at: datetime
+
+class ModelConfig(BaseModel):
+    model_name: str
+    max_tokens: int
+    input_cost_per_token: float
+    output_cost_per_token: float
+    mode: str
+    provider: str
+
+# create a schema for the final models, grouped by provider(provider is the key) and List of ModelConfig is the value
+class ProviderModels(BaseModel):
+    provider: str
+    models: List[ModelConfig]

@@ -72,20 +72,32 @@ export const comparison = {
     const response = await api.post('/comparison/create', data);
     return response.data;
   },
-  compare: async (prompt: string, models?: string[]) => {
+  getModels: async () => {
+    const response = await api.get('/comparison/models');
+    return response.data;
+  },
+  compare: async (prompt: string, providerModels: Record<string, string>, isFreeTier?: boolean, maxTokens?: number) => {
     const token = localStorage.getItem('access_token');
-    const response = await fetch(`${config.apiUrl}/comparison/compare`, {
+    const endpoint = isFreeTier ? '/comparison/compare-free' : '/comparison/compare';
+    const response = await fetch(`${config.apiUrl}${endpoint}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': token ? `Bearer ${token}` : '',
         'Accept': 'text/event-stream',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         prompt,
-        models: models || []
+        provider_models: providerModels,
+        max_tokens: maxTokens
       })
     });
+    if (!response.ok) {
+      const error = new Error(response.status === 429 ? 'Rate limit exceeded' : `HTTP error! status: ${response.status}`);
+      // @ts-ignore
+      error.status = response.status;
+      throw error;
+    }
     return response;
   }
 };

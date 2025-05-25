@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, List, AsyncGenerator
 from pydantic import BaseModel
-from app.core.services.pricing_service import PricingService
 
 class TokenUsage(BaseModel):
     prompt_tokens: int
@@ -16,24 +15,23 @@ class ModelResponse(BaseModel):
 class BaseAIProvider(ABC):
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.pricing_service = PricingService()
     
     @abstractmethod
-    async def generate_response(self, prompt: str, **kwargs) -> ModelResponse:
-        """Generate a response from the AI model."""
+    async def get_supported_models(self) -> List[str]:
+        """Get list of supported models from the provider."""
         pass
     
-    def calculate_cost(self, usage: TokenUsage) -> float:
+    @abstractmethod
+    async def stream_response(self, prompt: str, max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
+        """Stream the response from the provider."""
+        pass
+
+    def calculate_cost(self, usage: TokenUsage, pricing: Dict[str, float]) -> float:
         """Calculate the cost of the API call based on token usage."""
-        pricing = self.pricing_service.get_pricing(self.provider_name)
-        prompt_cost = (usage.prompt_tokens / 1000) * pricing["prompt_price_per_1k"]
-        completion_cost = (usage.completion_tokens / 1000) * pricing["completion_price_per_1k"]
+        prompt_cost = (usage.prompt_tokens) * pricing["input_cost_per_token"]
+        completion_cost = (usage.completion_tokens) * pricing["output_cost_per_token"]
         return prompt_cost + completion_cost
     
-    @abstractmethod
-    def count_tokens(self, text: str) -> int:
-        """Count the number of tokens in the given text."""
-        pass
     
     def _create_token_usage(self, prompt_tokens: int, completion_tokens: int) -> TokenUsage:
         """Create a TokenUsage object with the given token counts."""

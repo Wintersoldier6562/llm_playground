@@ -1,7 +1,6 @@
-from typing import List, Optional
+from typing import List
 from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, PostgresDsn
-import secrets
+from pydantic import  PostgresDsn
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "LLM Compare"
@@ -16,6 +15,9 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "llm_compare"
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
     
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:

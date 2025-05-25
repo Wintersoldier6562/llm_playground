@@ -1,48 +1,45 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import anthropic
 from .base import BaseAIProvider, ModelResponse, TokenUsage
 from typing import AsyncGenerator
 import time
 from datetime import datetime, timezone
+
 class AnthropicProvider(BaseAIProvider):
     def __init__(self, api_key: str):
         super().__init__(api_key)
         self.client = anthropic.AsyncAnthropic(api_key=api_key)
-        self.model = "claude-3-7-sonnet-20250219"
     
     @property
     def provider_name(self) -> str:
         return "anthropic"
     
-    async def generate_response(self, prompt: str, **kwargs) -> ModelResponse:
+    async def get_supported_models(self) -> List[str]:
+        """Get list of supported models from Anthropic API."""
         try:
-            response = await self.client.messages.create(
-                model=self.model,
-                max_tokens=4096,
-                messages=[{"role": "user", "content": prompt}],
-                **kwargs
-            )
-            usage = self._create_token_usage(
-                prompt_tokens=response.usage.input_tokens,
-                completion_tokens=response.usage.output_tokens
-            )
-            
-            return ModelResponse(
-                content=response.content[0].text,
-                model=self.model,
-                usage=usage,
-            )
+            models = await self.client.models.list()
+            # Filter for Claude models
+            claude_models = [
+                model.id for model in models 
+                if model.id.startswith("claude-")
+            ]
+            return sorted(claude_models)
         except Exception as e:
-            raise Exception(f"Anthropic API error: {str(e)}")
-    
-    async def stream_response(self, prompt: str) -> AsyncGenerator[str, None]:
+            # Fallback to known models if API call fails
+            return [
+                "claude-3-opus-20240229",
+                "claude-3-sonnet-20240229",
+                "claude-3-haiku-20240307"
+            ]
+
+    async def stream_response(self, prompt: str, max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
         try:
             start_time = time.time()
             input_tokens = 0
             output_tokens = 0
             stream = await self.client.messages.create(
-                model="claude-3-opus-20240229",
-                max_tokens=1000,
+                model=model,
+                max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
                 stream=True
             )
@@ -69,18 +66,13 @@ class AnthropicProvider(BaseAIProvider):
                 "is_final": True,
                 "content": '',
                 "latency": end_time - start_time,
-                "model_name": self.provider_name,
+                "provider_name": self.provider_name,
+                "model_name": model,
                 'prompt_tokens': input_tokens,
                 'completion_tokens': output_tokens,
                 'total_tokens': input_tokens + output_tokens,
-                "cost": self.calculate_cost(usage),
+                "cost": self.calculate_cost(usage, pricing),
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
         except Exception as e:
-            yield f"Error: {str(e)}"
-    
-    def count_tokens(self, text: str) -> int:
-        # Anthropic provides token counting through their API
-        # For simplicity, we'll use a rough estimation
-        # In production, you might want to use their actual tokenizer
-        return len(text.split()) * 1.3  # Rough estimation 
+            yield f"Exception Occured: {str(e)}"

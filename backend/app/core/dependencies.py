@@ -5,7 +5,6 @@ from app.core.database.session import get_db
 from app.core.database.models import User
 from app.core.services.auth_service import AuthService
 from sqlalchemy import select
-from typing import AsyncGenerator
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 auth_service = AuthService()

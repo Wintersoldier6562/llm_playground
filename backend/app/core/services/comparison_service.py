@@ -1,19 +1,21 @@
 import asyncio
 import time
-from typing import List, Dict, Optional, Any
+import json
+import redis
+import httpx
+from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.ai_providers.base import BaseAIProvider
 from app.core.ai_providers.openai_provider import OpenAIProvider
 from app.core.ai_providers.anthropic_provider import AnthropicProvider
 from app.core.ai_providers.xai_provider import XAIProvider
 from app.core.database.models import Prompt, ModelResponse, User
-from app.core.schemas.comparison import ComparisonRequest, ComparisonCreateRequest, ComparisonResponse, ModelResponse as ModelResponseSchema, TokenUsage
+from app.core.schemas.comparison import  ComparisonCreateRequest, ComparisonResponse, ModelResponse as ModelResponseSchema, ModelConfig, ProviderModels
 from app.core.config import settings
-from uuid import UUID, uuid4
 from datetime import datetime, timezone
 from typing import AsyncGenerator
 from sqlalchemy import select
-
+from collections import defaultdict
 class ComparisonService:
     def __init__(self):
         self.providers: Dict[str, BaseAIProvider] = {
@@ -21,133 +23,137 @@ class ComparisonService:
             "anthropic": AnthropicProvider(settings.ANTHROPIC_API_KEY),
             "xai": XAIProvider(settings.XAI_API_KEY),
         }
+        self.default_provider_models: Dict[str, str] = {
+            "openai": "gpt-4o",
+            "anthropic": "claude-3-opus-20240229",
+            "xai": "grok-3-beta",
+        }
+        # Initialize Redis client
+        self.redis_client = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            decode_responses=True
+        )
     
-    async def get_response_stats(self, provider: BaseAIProvider, prompt: str, response: str) -> Dict[str, Any]:
+    async def get_models(self) -> List[ProviderModels]:
         """
-        Calculate response statistics including token usage, cost, and latency.
+        Get all supported models from each AI provider.
+        Returns a list of ProviderModels containing model configurations.
+        Cached in Redis for 24 hours.
         """
-        try:
-            # Get token usage
-            usage = await provider.get_token_usage(prompt, response)
+        # Try to get cached data
+        cached_models = self.redis_client.get("provider_models_details")
+        if cached_models:
+            return [ProviderModels(**provider_data) for provider_data in json.loads(cached_models)]
+        
+        # Fetch models from litellm
+        async with httpx.AsyncClient() as client:
+            response = await client.get("https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json")
+            models = response.json()
             
-            # Calculate cost
-            cost = await provider.calculate_cost(usage)
+            # Filter and process models
+            filtered_models = defaultdict(list)
+            for model_name, model_data in models.items():
+                if not all(key in model_data for key in ["litellm_provider", "mode"]):
+                    continue
+                    
+                provider = model_data["litellm_provider"]
+                if provider not in self.providers or model_data["mode"] != "chat":
+                    continue
+                
+                # Clean model name
+                clean_model_name = model_name.replace("xai/", "") if 'xai/' in model_name else model_name
+                model_data["model_name"] = clean_model_name
+                filtered_models[provider].append(model_data)
+
+            # Get supported models from each provider
+            provider_models = []
+            for provider_name, provider in self.providers.items():
+                supported_models = await provider.get_supported_models()
+                model_configs = []
+                
+                for model in filtered_models[provider_name]:
+                    if model["model_name"] in supported_models:
+                        model_config = ModelConfig(
+                            model_name=model["model_name"],
+                            max_tokens=model["max_tokens"],
+                            input_cost_per_token=model["input_cost_per_token"],
+                            output_cost_per_token=model["output_cost_per_token"],
+                            mode=model["mode"],
+                            provider=provider_name
+                        )
+                        model_configs.append(model_config)
+                
+                if len(model_configs) > 0:
+                    provider_models.append(ProviderModels(
+                        provider=provider_name,
+                        models=model_configs
+                    ))
+
+            # Cache the results
+            cache_data = [provider_model.model_dump() for provider_model in provider_models]
+            self.redis_client.setex(
+                "provider_models_details",
+                24 * 60 * 60,  # 24 hours in seconds
+                json.dumps(cache_data)
+            )
             
-            # Calculate latency (in seconds)
-            latency = time.time() - provider.start_time if hasattr(provider, 'start_time') else 0
-            
-            return {
-                "usage": usage,
-                "cost": cost,
-                "latency": round(latency, 2)
-            }
-        except Exception as e:
-            return {
-                "usage": {"prompt_tokens": 0, "completion_tokens": 0},
-                "cost": 0,
-                "latency": 0,
-                "error": str(e)
-            }
+            return provider_models
     
     async def _get_model_response_stream(
-        self, prompt_id: str, model_name: str, prompt: str
+        self, prompt_id: str, provider_name:str, model_name: str, prompt: str, max_tokens: int
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Get streaming response from a specific model.
         """
-        if model_name not in self.providers:
-            raise ValueError(f"Invalid model: {model_name}")
+        if provider_name not in self.providers:
+            raise ValueError(f"Invalid provider: {provider_name}")
         
-        provider = self.providers[model_name]
+        provider = self.providers[provider_name]
+        provider_model_configs = await self.get_models()
+        pricing = None
+        model_config = None
+        for config in provider_model_configs:
+            models = config.models
+            for model in models:
+                if model.model_name == model_name:
+                    model_config = model
+                    pricing = {
+                        "input_cost_per_token": model.input_cost_per_token,
+                        "output_cost_per_token": model.output_cost_per_token
+                    }
+                    break
+        
+        if pricing is None or model_config is None:
+            raise ValueError(f"ModelConfig for {model_name} not found for provider {provider_name}")
+
+        print(f"Streaming response from {provider_name} {model_name} {provider}")
         
         try:
-            async for chunk in provider.stream_response(prompt):
+            async for chunk in provider.stream_response(prompt, max_tokens, model_name, pricing):
                 if isinstance(chunk, dict):
                     chunk['is_final'] = True
                     yield chunk
                 else:
-                    yield {
-                        "model_name": model_name,
-                        "content": chunk,
-                        "is_final": False
-                    }
+                    if "Exception Occured: " in chunk:
+                        exception_message = chunk.split("Exception Occured: ")[1]
+                        raise Exception(exception_message)
+                    else:
+                        yield {
+                            "provider_name": provider_name,
+                            "model_name": model_name,
+                            "content": chunk,
+                            "is_final": False
+                        }
             
         except Exception as e:
             yield {
+                "provider_name": provider_name,
                 "model_name": model_name,
                 "error": str(e),
                 "is_final": True
             }
-    
-    async def compare_models(
-        self, db: AsyncSession, prompt: str, models: List[str] = None
-    ) -> ComparisonResponse:
-        """
-        Compare responses from multiple AI models for a given prompt.
-        """
-        # Get models to compare
-        if models and len(models) > 0:
-            for model in models:
-                if model not in self.providers:
-                    raise ValueError(f"Invalid model: {model}")
-        models_to_compare = models or list(self.providers.keys())
-        
-        # Create prompt object
-        prompt_obj = Prompt(
-            content=prompt,
-            created_at=datetime.now(timezone.utc)
-        )
-        db.add(prompt_obj)
-        await db.flush()  # Get the prompt ID without committing
-        
-        # Get responses from all models concurrently
-        tasks = []
-        for model_name in models_to_compare:
-            if model_name in self.providers:
-                tasks.append(self._get_model_response(prompt_obj.id, model_name, prompt))
-        
-        responses = await asyncio.gather(*tasks)
-        
-        return ComparisonResponse(
-            prompt_id=prompt_obj.id,
-            prompt=prompt,
-            responses=responses,
-            created_at=prompt_obj.created_at
-        )
-    
-    async def _get_model_response(
-        self, prompt_id: str, model_name: str, prompt: str
-    ) -> ModelResponseSchema:
-        """
-        Get response from a specific model.
-        """
-        if model_name not in self.providers:
-            raise ValueError(f"Invalid model: {model_name}")
-        
-        provider = self.providers[model_name]
-        start_time = time.time()
-        
-        try:
-            response = await provider.get_response(prompt)
-            stats = await self.get_response_stats(provider, prompt, response)
-            
-            return ModelResponseSchema(
-                model_name=model_name,
-                content=response,
-                usage=stats["usage"],
-                cost=stats["cost"],
-                latency=stats["latency"],
-                created_at=datetime.now(timezone.utc)
-            )
-        except Exception as e:
-            return ModelResponseSchema(
-                model_name=model_name,
-                content=str(e),
-                usage={"prompt_tokens": 0, "completion_tokens": 0},
-                cost=0,
-                latency=round(time.time() - start_time, 2),
-                created_at=datetime.now(timezone.utc)
-            )
     
     async def get_prompt_responses(
         self, db: AsyncSession, prompt_id: str

@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.session import get_db
+from app.core.config import settings
+import redis
 from app.core.database.models import User, Prompt, ModelResponse as DBModelResponse
 from app.core.schemas.comparison import (
     ComparisonRequest, 
@@ -11,7 +13,7 @@ from app.core.schemas.comparison import (
     ComparisonCreateRequest
 )
 from app.core.dependencies import get_current_user
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, List, Dict, Any
 from sqlalchemy import select
 import uuid
 from app.core.services.comparison_service import ComparisonService
@@ -19,12 +21,29 @@ from datetime import datetime, timezone
 from uuid import uuid4
 import asyncio
 import json
+from fastapi_limiter.depends import RateLimiter
 
 router = APIRouter()
+
+
+@router.get("/models", dependencies=[Depends(RateLimiter(times=2000, hours=1))])
+async def get_supported_models(
+    req: Request,
+    comparison_service: ComparisonService = Depends(ComparisonService)
+) -> Dict[str, List[str]]:
+    """
+    Get all supported models from each AI provider.
+    Returns a dictionary mapping provider names to their supported models.
+    Cached in Redis for 24 hours.
+    """
+    provider_models = await comparison_service.get_models()
+    # convert to dict of provider name to list of model_names
+    return {provider_model.provider: [model_config.model_name for model_config in provider_model.models] for provider_model in provider_models}
 
 @router.post("/compare")
 async def stream_comparison(
     request: ComparisonRequest,
+    req: Request,
     current_user: User = Depends(get_current_user),
     comparison_service: ComparisonService = Depends(ComparisonService)
 ) -> StreamingResponse:
@@ -32,16 +51,16 @@ async def stream_comparison(
     Stream responses from multiple AI models for a given prompt.
     Each model streams its chunks independently, and sends a final payload with metrics when done.
     """
-    print("Streaming comparison", flush=True)
+    
     try:
         async def generate() -> AsyncGenerator[str, None]:
             # Get models to compare
-            if request.models and len(request.models) > 0:
-                for model in request.models:
-                    if model not in comparison_service.providers:
-                        raise ValueError(f"Invalid model: {model}")
-            models_to_compare = request.models or list(comparison_service.providers.keys())
-            
+            if request.provider_models and len(request.provider_models.keys()) > 0:
+                for provider in request.provider_models.keys():
+                    if provider not in comparison_service.providers:
+                        raise ValueError(f"Invalid provider: {provider}")
+            ai_providers = request.provider_models or comparison_service.default_provider_models
+            max_tokens = request.max_tokens
             # Create prompt object
             prompt_obj = Prompt(
                 id=uuid4(),
@@ -52,10 +71,113 @@ async def stream_comparison(
             
             # Create streaming tasks for each model
             streams = []
-            for model_name in models_to_compare:
-                if model_name in comparison_service.providers:
+            for provider, model_name in ai_providers.items():
+                if provider in comparison_service.providers:
                     streams.append(comparison_service._get_model_response_stream(
-                        prompt_obj.id, model_name, prompt_obj.content
+                        prompt_obj.id, provider, model_name, prompt_obj.content, max_tokens
+                    ))
+
+            # Process streams concurrently while yielding chunks immediately
+            async def process_streams():
+                # Create a queue for each stream
+                queues = [asyncio.Queue() for _ in streams]
+                
+                # Process each stream and put chunks in its queue
+                async def process_and_queue(stream, queue):
+                    try:
+                        async for response in stream:
+                            await queue.put(response)
+                    except Exception as e:
+                        await queue.put({"error": str(e)})
+                
+                # Create tasks for each stream
+                tasks = []
+                for stream, queue in zip(streams, queues):
+                    task = asyncio.create_task(process_and_queue(stream, queue))
+                    tasks.append(task)
+                
+                # Process all queues concurrently
+                while tasks:
+                    # Create tasks for getting items from queues
+                    queue_tasks = [asyncio.create_task(queue.get()) for queue in queues]
+                    
+                    # Wait for any queue to have data
+                    done, pending = await asyncio.wait(
+                        queue_tasks,
+                        return_when=asyncio.FIRST_COMPLETED
+                    )
+                    
+                    # Process completed queues
+                    for future in done:
+                        try:
+                            response = future.result()
+                            # Format as SSE
+                            yield f"data: {json.dumps(response)}\n\n"
+                            
+                            # If this was a final response, remove the queue
+                            if isinstance(response, dict) and response.get('is_final'):
+                                idx = queue_tasks.index(future)
+                                queues.pop(idx)
+                                tasks.pop(idx)
+                        except Exception as e:
+                            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                    
+                    # Cancel any pending queue tasks
+                    for task in pending:
+                        task.cancel()
+                
+                # Send completion message
+                yield "data: [DONE]\n\n"
+
+            async for chunk in process_streams():
+                yield chunk
+
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error streaming responses: {str(e)}"
+        )
+
+@router.post("/compare-free",  dependencies=[Depends(RateLimiter(times=200, hours=1))])
+async def stream_comparison_free(
+    request: ComparisonRequest,
+    req: Request,
+    comparison_service: ComparisonService = Depends(ComparisonService)
+) -> StreamingResponse:
+    """
+    Stream responses from multiple AI models for a given prompt.
+    Each model streams its chunks indepai_providers.keysendently, and sends a final payload with metrics when done.
+    """
+    
+    try:
+        async def generate() -> AsyncGenerator[str, None]:
+            # Get models to compare
+            if request.provider_models and len(request.provider_models.keys()) > 0:
+                for provider in request.provider_models.keys():
+                    if provider not in comparison_service.providers:
+                        raise ValueError(f"Invalid provider: {provider}")
+            ai_providers = request.provider_models or comparison_service.default_provider_models
+            print(f"ai_providers: {ai_providers}", flush=True)
+            max_tokens = request.max_tokens
+            # Create prompt object
+            prompt_obj = Prompt(
+                id=uuid4(),
+                content=request.prompt,
+                user_id=str(uuid.uuid4()),
+                created_at=datetime.now(timezone.utc)
+            )
+            
+            # Create streaming tasks for each model
+            streams = []
+            for provider, model_name in ai_providers.items():
+                if provider in comparison_service.providers:
+                    print(f"Streaming response from {provider} {model_name}", flush=True)
+                    streams.append(comparison_service._get_model_response_stream(
+                        prompt_obj.id, provider, model_name, prompt_obj.content, max_tokens
                     ))
 
             # Process streams concurrently while yielding chunks immediately

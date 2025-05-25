@@ -1,48 +1,46 @@
-from typing import Dict, Any
-import tiktoken
+from typing import List, Dict
 from openai import AsyncOpenAI
-from .base import BaseAIProvider, ModelResponse, TokenUsage
+from .base import BaseAIProvider, ModelResponse
 from typing import AsyncGenerator
 import time
 from datetime import datetime, timezone
+
 class OpenAIProvider(BaseAIProvider):
     def __init__(self, api_key: str):
         super().__init__(api_key)
         self.client = AsyncOpenAI(api_key=api_key)
-        self.model = "gpt-4o"
-        self.encoding = tiktoken.encoding_for_model(self.model)
     
     @property
     def provider_name(self) -> str:
         return "openai"
     
-    async def generate_response(self, prompt: str, **kwargs) -> ModelResponse:
+    async def get_supported_models(self) -> List[str]:
+        """Get list of supported models from OpenAI API."""
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                **kwargs
-            )
-            
-            usage = self._create_token_usage(
-                prompt_tokens=response.usage.prompt_tokens,
-                completion_tokens=response.usage.completion_tokens
-            )
-            
-            return ModelResponse(
-                content=response.choices[0].message.content,
-                model=self.model,
-                usage=usage,
-            )
+            models = await self.client.models.list()
+            # Filter for chat completion models
+            chat_models = [
+                model.id for model in models.data 
+                if model.id.startswith(("gpt-3", "gpt-4", "o"))
+            ]
+            return sorted(chat_models)
         except Exception as e:
-            raise Exception(f"OpenAI API error: {str(e)}")
+            # Fallback to known models if API call fails
+            return [
+                "gpt-4",
+                "gpt-4-turbo-preview",
+                "gpt-3.5-turbo",
+                "gpt-3.5-turbo-16k"
+            ]
     
-    async def stream_response(self, prompt: str) -> AsyncGenerator[str, None]:
+    
+    async def stream_response(self, prompt: str, max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
         try:
             start_time = time.time()
             stream = await self.client.chat.completions.create(
-                model="gpt-4",
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens,
                 stream=True,
                 stream_options={
                     "include_usage": True
@@ -61,15 +59,13 @@ class OpenAIProvider(BaseAIProvider):
                 "is_final": True,
                 "content": '',
                 "latency": end_time - start_time,
-                "model_name": self.provider_name,
+                "provider_name": self.provider_name,
+                "model_name": model,
                 'prompt_tokens': chunk.usage.prompt_tokens,
                 'completion_tokens': chunk.usage.completion_tokens,
                 'total_tokens': chunk.usage.prompt_tokens + chunk.usage.completion_tokens,
-                "cost": self.calculate_cost(usage),
+                "cost": self.calculate_cost(usage, pricing),
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
         except Exception as e:
-            yield f"Error: {str(e)}"
-
-    def count_tokens(self, text: str) -> int:
-        return len(self.encoding.encode(text)) 
+            yield f"Exception Occured: {str(e)}"

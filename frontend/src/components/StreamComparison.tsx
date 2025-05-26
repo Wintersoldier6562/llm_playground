@@ -296,22 +296,35 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
           </div>
         </div>
       )}
-      <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.08)', padding: 40, marginTop: 32, maxWidth: 1400, marginLeft: 'auto', marginRight: 'auto' }}>
+      <div style={{
+        background: 'white',
+        borderRadius: 12,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+        padding: 50,
+        marginTop: 50,
+        width: '100vw',
+        maxWidth: 1200,
+        minWidth: 340,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+      }}>
         <h2 style={{ fontWeight: 700, fontSize: 28, marginBottom: 24 }}>Model Comparison</h2>
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 24 }}>
             <div style={{ fontWeight: 500, marginBottom: 8 }}>Select Providers</div>
             <div>
               {Object.keys(providerModelsData).map(provider => (
-                <div key={provider} style={{ marginBottom: 16 }}>
-                  <Checkbox
-                    isChecked={selectedProviders.includes(provider)}
-                    onChange={() => handleProviderChange(provider)}
-                    label={provider.charAt(0).toUpperCase() + provider.slice(1)}
-                    name={provider}
-                  />
+                <div key={provider} style={{ minWidth: 600, maxWidth: 600, flex: 1,display: 'flex', alignItems: 'center', marginBottom: 16, gap: 24 }}>
+                  <div style={{ width: 140, flexShrink: 0 }}>
+                    <Checkbox
+                      isChecked={selectedProviders.includes(provider)}
+                      onChange={() => handleProviderChange(provider)}
+                      label={provider.charAt(0).toUpperCase() + provider.slice(1)}
+                      name={provider}
+                    />
+                  </div>
                   {selectedProviders.includes(provider) && (
-                    <div style={{ marginTop: 8, marginLeft: 32, maxWidth: 340 }}>
+                    <div style={{ minWidth: 600, maxWidth: 600, flex: 1, display: 'flex', alignItems: 'center' }}>
                       <Select
                         options={providerModelsData[provider].map(model => ({ label: model, value: model }))}
                         value={selectedModels[provider] ? { label: selectedModels[provider], value: selectedModels[provider] } : null}
@@ -362,7 +375,14 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
           </div>
         </form>
       </div>
-      <div style={{ marginTop: 32, width: '100%', display: 'flex', flexWrap: 'wrap', gap: 32, justifyContent: 'center' }}>
+      <div style={{
+        marginTop: 32,
+        width: '100%',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+        gap: 32,
+        justifyContent: 'center',
+      }}>
         {selectedProviders.map(provider => {
           const response = responses[provider];
           const tab = tabIndices[provider] || 0;
@@ -376,10 +396,7 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
               boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
               padding: 28,
               minHeight: 220,
-              minWidth: 370,
-              maxWidth: 480,
-              flex: '1 1 370px',
-              marginBottom: 24,
+              minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'stretch',

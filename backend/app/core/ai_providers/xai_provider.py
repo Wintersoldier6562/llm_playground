@@ -14,19 +14,18 @@ class XAIProvider(BaseAIProvider):
     def provider_name(self) -> str:
         return "xai"
     
-    async def get_supported_models(self) -> List[str]:
+    async def get_supported_models(self, models: List[Dict]) -> List[Dict]:
         """Get list of supported models from XAI API."""
         try:
-            models = await self.client.models.list()
-            # Filter for Grok models
-            grok_models = [
-                model.id for model in models.data 
-                if model.id.startswith("grok-")
-            ]
-            return sorted(grok_models)
+    
+            # sort models by model_name descending and include grok- models first and then exclude grok-beta model
+            models.sort(key=lambda x: (x["model_name"].startswith("grok-"), x["model_name"]), reverse=True)
+            # exclude grok-beta model
+            models = [model for model in models if not model["model_name"] == "grok-beta"]
+            return models
         except Exception as e:
             # Fallback to known models if API call fails
-            return ["grok-3-beta"]
+            return [{"model_name": "grok-3-beta"}]
     
     async def stream_response(self, prompt: str, max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
         try:

@@ -62,6 +62,8 @@ class ComparisonService:
                 if provider not in self.providers or model_data["mode"] != "chat":
                     continue
                 
+                if 'audio' in model_name or 'vision' in model_name or "ft:" in model_name:
+                    continue
                 # Clean model name
                 clean_model_name = model_name.replace("xai/", "") if 'xai/' in model_name else model_name
                 model_data["model_name"] = clean_model_name
@@ -69,12 +71,13 @@ class ComparisonService:
 
             # Get supported models from each provider
             provider_models = []
-            for provider_name, provider in self.providers.items():
-                supported_models = await provider.get_supported_models()
+            for provider_name, models in filtered_models.items():
                 model_configs = []
-                
-                for model in filtered_models[provider_name]:
-                    if model["model_name"] in supported_models:
+                provider = self.providers[provider_name]
+                supported_models = await provider.get_supported_models(models)
+                print(f"Supported models: {provider_name} {supported_models}")
+                for model in supported_models:
+                    try:
                         model_config = ModelConfig(
                             model_name=model["model_name"],
                             max_tokens=model["max_tokens"],
@@ -84,12 +87,14 @@ class ComparisonService:
                             provider=provider_name
                         )
                         model_configs.append(model_config)
+                    except Exception as e:
+                        print(f"Error creating model config: {e} {model}")
                 
                 if len(model_configs) > 0:
-                    provider_models.append(ProviderModels(
-                        provider=provider_name,
-                        models=model_configs
-                    ))
+                        provider_models.append(ProviderModels(
+                            provider=provider_name,
+                            models=model_configs
+                        ))
 
             # Cache the results
             cache_data = [provider_model.model_dump() for provider_model in provider_models]

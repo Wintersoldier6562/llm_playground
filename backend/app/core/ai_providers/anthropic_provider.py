@@ -14,18 +14,14 @@ class AnthropicProvider(BaseAIProvider):
     def provider_name(self) -> str:
         return "anthropic"
     
-    async def get_supported_models(self) -> List[str]:
+    async def get_supported_models(self, models: List[Dict]) -> List[Dict]:
         """Get list of supported models from Anthropic API."""
         try:
-            models = await self.client.models.list()
-            # Filter for Claude models
-            claude_models = [
-                model.id for model in models 
-                if model.id.startswith("claude-")
-            ]
-            return sorted(claude_models)
+            models.sort(key=lambda x: x["model_name"], reverse=True)
+            return models
         except Exception as e:
             # Fallback to known models if API call fails
+            print(f"Error getting supported models: {e}")
             return [
                 "claude-3-opus-20240229",
                 "claude-3-sonnet-20240229",

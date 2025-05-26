@@ -14,16 +14,12 @@ class OpenAIProvider(BaseAIProvider):
     def provider_name(self) -> str:
         return "openai"
     
-    async def get_supported_models(self) -> List[str]:
+    async def get_supported_models(self, models: List[Dict]) -> List[Dict]:
         """Get list of supported models from OpenAI API."""
         try:
-            models = await self.client.models.list()
-            # Filter for chat completion models
-            chat_models = [
-                model.id for model in models.data 
-                if model.id.startswith(("gpt-3", "gpt-4", "o"))
-            ]
-            return sorted(chat_models)
+            # sort models by model_name descending and include gpt- models first and then other models
+            models.sort(key=lambda x: (x["model_name"].startswith("gpt-"), x["model_name"]), reverse=True)
+            return models
         except Exception as e:
             # Fallback to known models if API call fails
             return [

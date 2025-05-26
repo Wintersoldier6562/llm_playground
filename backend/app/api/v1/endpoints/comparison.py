@@ -26,7 +26,7 @@ from fastapi_limiter.depends import RateLimiter
 router = APIRouter()
 
 
-@router.get("/models", dependencies=[Depends(RateLimiter(times=2000, hours=1))])
+@router.get("/models")
 async def get_supported_models(
     req: Request,
     comparison_service: ComparisonService = Depends(ComparisonService)
@@ -142,7 +142,7 @@ async def stream_comparison(
             detail=f"Error streaming responses: {str(e)}"
         )
 
-@router.post("/compare-free",  dependencies=[Depends(RateLimiter(times=200, hours=1))])
+@router.post("/compare-free",  dependencies=[Depends(RateLimiter(times=2, hours=1))])
 async def stream_comparison_free(
     request: ComparisonRequest,
     req: Request,

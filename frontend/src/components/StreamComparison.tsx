@@ -56,7 +56,13 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
   const [tabIndices, setTabIndices] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    comparison.getModels().then(setProviderModelsData)
+    comparison.getModels()
+      .then(setProviderModelsData)
+      .catch((err) => {
+        if (err?.response?.status === 429 || (err?.message && err.message.includes('429'))) {
+          setShowRateLimitModal(true);
+        }
+      });
   }, [])
 
   // Auto-select first model for each selected provider

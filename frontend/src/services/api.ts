@@ -93,7 +93,7 @@ export const comparison = {
       })
     });
     if (!response.ok) {
-      const error = new Error(response.status === 429 ? 'Rate limit exceeded' : `HTTP error! status: ${response.status}`);
+      const error = new Error(response.status === 429 ? '429: Rate limit exceeded' : `HTTP error! status: ${response.status}`);
       // @ts-ignore
       error.status = response.status;
       throw error;

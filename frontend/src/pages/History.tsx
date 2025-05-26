@@ -4,9 +4,9 @@ import { comparison } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 
 const MODEL_NAMES: { [key: string]: string } = {
-  'openai': 'GPT-4',
-  'anthropic': 'Claude',
-  'xai': 'XAI',
+  'openai': 'OpenAI',
+  'anthropic': 'Anthropic',
+  'xai': 'Xai',
 };
 
 const MetricBadge = ({ label, value, unit = '', color = 'blue' }: { label: string; value: string | number; unit?: string; color?: string }) => {
@@ -85,7 +85,18 @@ export function History() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div style={{
+      background: 'white',
+      borderRadius: 12,
+      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+      padding: 40,
+      marginTop: 32,
+      width: '90vw',
+      maxWidth: 1200,
+      minWidth: 340,
+      marginLeft: 'auto',
+      marginRight: 'auto',
+    }}>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#172B4D]">Comparison History</h1>
       </div>

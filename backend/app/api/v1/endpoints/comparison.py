@@ -10,6 +10,7 @@ from app.core.schemas.comparison import (
     ComparisonResponse, 
     ModelResponse,
     TokenUsage,
+    ModelConfig,
     ComparisonCreateRequest
 )
 from app.core.dependencies import get_current_user
@@ -39,6 +40,19 @@ async def get_supported_models(
     provider_models = await comparison_service.get_models()
     # convert to dict of provider name to list of model_names
     return {provider_model.provider: [model_config.model_name for model_config in provider_model.models] for provider_model in provider_models}
+
+@router.get("/provider-models")
+async def get_supported_models_for_provider(
+    comparison_service: ComparisonService = Depends(ComparisonService)
+) -> List[ModelConfig]:
+    
+    provider_models = await comparison_service.get_models()
+    print(f"Provider models: {provider_models}", flush=True)
+    # convert to list of ModelConfig
+    model_configs = []
+    for provider_model in provider_models:
+        model_configs.extend(provider_model.models)
+    return model_configs
 
 @router.post("/compare")
 async def stream_comparison(

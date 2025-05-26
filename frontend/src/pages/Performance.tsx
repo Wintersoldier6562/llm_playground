@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { comparison } from '../services/api';
 
 const MODEL_NAMES: { [key: string]: string } = {
-  'openai': 'GPT-4',
-  'anthropic': 'Claude',
-  'xai': 'XAI',
+  'openai': 'OpenAI',
+  'anthropic': 'Anthropic',
+  'xai': 'Xai',
 };
 
 interface ModelMetrics {

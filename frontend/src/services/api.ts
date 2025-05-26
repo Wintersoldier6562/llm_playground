@@ -76,6 +76,10 @@ export const comparison = {
     const response = await api.get('/comparison/models');
     return response.data;
   },
+  getProviderModels: async () => {
+    const response = await api.get('/comparison/provider-models');
+    return response.data;
+  },
   compare: async (prompt: string, providerModels: Record<string, string>, isFreeTier?: boolean, maxTokens?: number) => {
     const token = localStorage.getItem('access_token');
     const endpoint = isFreeTier ? '/comparison/compare-free' : '/comparison/compare';

@@ -11,10 +11,11 @@ import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from './store'
 import { logout, setAuthFromStorage } from './features/auth/authSlice'
 import { useEffect } from 'react'
+import ModelComparison from './pages/ModelComparison'
 
 const queryClient = new QueryClient()
 
-function Sidebar() {
+function Sidebar({ isAuthenticated }: { isAuthenticated: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
@@ -36,41 +37,74 @@ function Sidebar() {
             AI Model Playground
           </h1>
           <nav className="space-y-2">
-            <NavLink
-              to="/stream"
-              className={({ isActive }) =>
-                `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
-              }
-            >
-              Compare
-            </NavLink>
-            <NavLink
-              to="/history"
-              className={({ isActive }) =>
-                `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
-              }
-            >
-              History
-            </NavLink>
-            <NavLink
-              to="/performance"
-              className={({ isActive }) =>
-                `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
-              }
-            >
-              Performance
-            </NavLink>
+            {isAuthenticated ? (
+              <>
+                <NavLink
+                  to="/stream"
+                  className={({ isActive }) =>
+                    `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
+                  }
+                >
+                  Compare
+                </NavLink>
+                <NavLink
+                  to="/history"
+                  className={({ isActive }) =>
+                    `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
+                  }
+                >
+                  History
+                </NavLink>
+                <NavLink
+                  to="/performance"
+                  className={({ isActive }) =>
+                    `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
+                  }
+                >
+                  Performance
+                </NavLink>
+                <NavLink
+                  to="/model-comparison"
+                  className={({ isActive }) =>
+                    `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
+                  }
+                >
+                  Model Comparison
+                </NavLink>
+              </>
+            ) : (
+              <>
+                <NavLink
+                  to="/"
+                  className={({ isActive }) =>
+                    `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
+                  }
+                >
+                  Playground
+                </NavLink>
+                <NavLink
+                  to="/model-comparison"
+                  className={({ isActive }) =>
+                    `block px-4 py-2 rounded-md text-base font-medium ${isActive ? 'bg-[#E6FCFF] text-[#0052CC]' : 'text-[#172B4D] hover:bg-[#F4F5F7]'}`
+                  }
+                >
+                  Model Comparison
+                </NavLink>
+              </>
+            )}
           </nav>
         </div>
       </div>
-      <div className="p-6">
-        <button
-          onClick={handleLogout}
-          className="w-full py-2 px-4 rounded bg-red-600 text-white font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-        >
-          Logout
-        </button>
-      </div>
+      {isAuthenticated && (
+        <div className="p-6">
+          <button
+            onClick={handleLogout}
+            className="w-full py-2 px-4 rounded bg-red-600 text-white font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            Logout
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -97,24 +131,38 @@ function App() {
             element={
               isAuthenticated ? (
                 <PrivateRoute>
-                  <Sidebar />
+                  <Sidebar isAuthenticated={true} />
                   <div className="ml-64 min-h-screen bg-[#F4F5F7]">
-                    <div className="flex justify-end items-center h-16 px-8">
-                      <UserMenu />
-                    </div>
+                    {isAuthenticated && (
+                      <div className="flex justify-end items-center h-16 px-8">
+                        <UserMenu />
+                      </div>
+                    )}
                     <Routes>
                       <Route path="/stream" element={<StreamPage />} />
                       <Route path="/history" element={<History />} />
                       <Route path="/performance" element={<Performance />} />
+                      <Route path="/model-comparison" element={<ModelComparison />} />
                       <Route path="*" element={<Navigate to="/stream" replace />} />
                     </Routes>
                   </div>
                 </PrivateRoute>
               ) : (
-                <Routes>
-                  <Route path="/" element={<StreamFreePage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                <>
+                  <Sidebar isAuthenticated={false} />
+                  <div className="ml-64 min-h-screen bg-[#F4F5F7]">
+                    {isAuthenticated && (
+                      <div className="flex justify-end items-center h-16 px-8">
+                        <UserMenu />
+                      </div>
+                    )}
+                    <Routes>
+                      <Route path="/" element={<StreamFreePage />} />
+                      <Route path="/model-comparison" element={<ModelComparison />} />
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </div>
+                </>
               )
             }
           />

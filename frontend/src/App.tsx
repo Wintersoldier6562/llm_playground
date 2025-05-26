@@ -1,19 +1,21 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Login } from './pages/Login'
-import { StreamPage } from './pages/StreamPage'
-import { StreamFreePage } from './pages/StreamFreePage'
-import { History } from './pages/History'
-import { Performance } from './pages/Performance'
+import { Suspense, lazy } from 'react'
 import { PrivateRoute } from './components/PrivateRoute'
 import { UserMenu } from './components/UserMenu'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from './store'
 import { logout, setAuthFromStorage } from './features/auth/authSlice'
 import { useEffect } from 'react'
-import ModelComparison from './pages/ModelComparison'
 
 const queryClient = new QueryClient()
+
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })))
+const StreamPage = lazy(() => import('./pages/StreamPage').then(m => ({ default: m.StreamPage })))
+const StreamFreePage = lazy(() => import('./pages/StreamFreePage').then(m => ({ default: m.StreamFreePage })))
+const History = lazy(() => import('./pages/History').then(m => ({ default: m.History })))
+const Performance = lazy(() => import('./pages/Performance').then(m => ({ default: m.Performance })))
+const ModelComparison = lazy(() => import('./pages/ModelComparison').then(m => ({ default: m.default })))
 
 function Sidebar({ isAuthenticated }: { isAuthenticated: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
@@ -124,49 +126,55 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthLoader />
       <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="*"
-            element={
-              isAuthenticated ? (
-                <PrivateRoute>
-                  <Sidebar isAuthenticated={true} />
-                  <div className="ml-64 min-h-screen bg-[#F4F5F7]">
-                    {isAuthenticated && (
-                      <div className="flex justify-end items-center h-16 px-8">
-                        <UserMenu />
-                      </div>
-                    )}
-                    <Routes>
-                      <Route path="/stream" element={<StreamPage />} />
-                      <Route path="/history" element={<History />} />
-                      <Route path="/performance" element={<Performance />} />
-                      <Route path="/model-comparison" element={<ModelComparison />} />
-                      <Route path="*" element={<Navigate to="/stream" replace />} />
-                    </Routes>
-                  </div>
-                </PrivateRoute>
-              ) : (
-                <>
-                  <Sidebar isAuthenticated={false} />
-                  <div className="ml-64 min-h-screen bg-[#F4F5F7]">
-                    {isAuthenticated && (
-                      <div className="flex justify-end items-center h-16 px-8">
-                        <UserMenu />
-                      </div>
-                    )}
-                    <Routes>
-                      <Route path="/" element={<StreamFreePage />} />
-                      <Route path="/model-comparison" element={<ModelComparison />} />
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </div>
-                </>
-              )
-            }
-          />
-        </Routes>
+        <Suspense fallback={<div style={{textAlign:'center',marginTop:40}}>Loading...</div>}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="*"
+              element={
+                isAuthenticated ? (
+                  <PrivateRoute>
+                    <Sidebar isAuthenticated={true} />
+                    <div className="ml-64 min-h-screen bg-[#F4F5F7]">
+                      {isAuthenticated && (
+                        <div className="flex justify-end items-center h-16 px-8">
+                          <UserMenu />
+                        </div>
+                      )}
+                      <Suspense fallback={<div style={{textAlign:'center',marginTop:40}}>Loading...</div>}>
+                        <Routes>
+                          <Route path="/stream" element={<StreamPage />} />
+                          <Route path="/history" element={<History />} />
+                          <Route path="/performance" element={<Performance />} />
+                          <Route path="/model-comparison" element={<ModelComparison />} />
+                          <Route path="*" element={<Navigate to="/stream" replace />} />
+                        </Routes>
+                      </Suspense>
+                    </div>
+                  </PrivateRoute>
+                ) : (
+                  <>
+                    <Sidebar isAuthenticated={false} />
+                    <div className="ml-64 min-h-screen bg-[#F4F5F7]">
+                      {isAuthenticated && (
+                        <div className="flex justify-end items-center h-16 px-8">
+                          <UserMenu />
+                        </div>
+                      )}
+                      <Suspense fallback={<div style={{textAlign:'center',marginTop:40}}>Loading...</div>}>
+                        <Routes>
+                          <Route path="/" element={<StreamFreePage />} />
+                          <Route path="/model-comparison" element={<ModelComparison />} />
+                          <Route path="*" element={<Navigate to="/" replace />} />
+                        </Routes>
+                      </Suspense>
+                    </div>
+                  </>
+                )
+              }
+            />
+          </Routes>
+        </Suspense>
       </Router>
     </QueryClientProvider>
   )

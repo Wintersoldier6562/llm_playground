@@ -5,6 +5,7 @@ const MODEL_NAMES: { [key: string]: string } = {
   'openai': 'OpenAI',
   'anthropic': 'Anthropic',
   'xai': 'Xai',
+  'google': 'Google',
 };
 
 interface ModelMetrics {

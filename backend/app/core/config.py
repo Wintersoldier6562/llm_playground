@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     ANTHROPIC_API_KEY: str
     XAI_API_KEY: str
-    
+    GEMINI_API_KEY: str
     # JWT
     SECRET_KEY: str = "2k0wyctYX81gHqJJJoKwzhZDKYllo7V9"
     ALGORITHM: str = "HS256"

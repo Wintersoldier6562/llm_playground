@@ -7,6 +7,7 @@ const MODEL_NAMES: { [key: string]: string } = {
   'openai': 'OpenAI',
   'anthropic': 'Anthropic',
   'xai': 'Xai',
+  'google': 'Google',
 };
 
 const MetricBadge = ({ label, value, unit = '', color = 'blue' }: { label: string; value: string | number; unit?: string; color?: string }) => {

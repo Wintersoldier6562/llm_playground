@@ -47,7 +47,6 @@ async def get_supported_models_for_provider(
 ) -> List[ModelConfig]:
     
     provider_models = await comparison_service.get_models()
-    print(f"Provider models: {provider_models}", flush=True)
     # convert to list of ModelConfig
     model_configs = []
     for provider_model in provider_models:
@@ -156,7 +155,7 @@ async def stream_comparison(
             detail=f"Error streaming responses: {str(e)}"
         )
 
-@router.post("/compare-free",  dependencies=[Depends(RateLimiter(times=2, hours=1))])
+@router.post("/compare-free",  dependencies=[Depends(RateLimiter(times=2000, hours=1))])
 async def stream_comparison_free(
     request: ComparisonRequest,
     req: Request,
@@ -175,7 +174,6 @@ async def stream_comparison_free(
                     if provider not in comparison_service.providers:
                         raise ValueError(f"Invalid provider: {provider}")
             ai_providers = request.provider_models or comparison_service.default_provider_models
-            print(f"ai_providers: {ai_providers}", flush=True)
             max_tokens = request.max_tokens
             # Create prompt object
             prompt_obj = Prompt(
@@ -229,6 +227,7 @@ async def stream_comparison_free(
                         try:
                             response = future.result()
                             # Format as SSE
+                            print(f"response: {response}", flush=True)
                             yield f"data: {json.dumps(response)}\n\n"
                             
                             # If this was a final response, remove the queue
@@ -243,10 +242,12 @@ async def stream_comparison_free(
                     for task in pending:
                         task.cancel()
                 
+                print("done", flush=True)
                 # Send completion message
                 yield "data: [DONE]\n\n"
 
             async for chunk in process_streams():
+                print(f"chunk: {chunk}", flush=True)
                 yield chunk
 
         return StreamingResponse(

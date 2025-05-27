@@ -9,6 +9,7 @@ from app.core.ai_providers.base import BaseAIProvider
 from app.core.ai_providers.openai_provider import OpenAIProvider
 from app.core.ai_providers.anthropic_provider import AnthropicProvider
 from app.core.ai_providers.xai_provider import XAIProvider
+from app.core.ai_providers.gemini_provider import GeminiProvider
 from app.core.database.models import Prompt, ModelResponse, User
 from app.core.schemas.comparison import  ComparisonCreateRequest, ComparisonResponse, ModelResponse as ModelResponseSchema, ModelConfig, ProviderModels
 from app.core.config import settings
@@ -16,17 +17,20 @@ from datetime import datetime, timezone
 from typing import AsyncGenerator
 from sqlalchemy import select
 from collections import defaultdict
+
 class ComparisonService:
     def __init__(self):
         self.providers: Dict[str, BaseAIProvider] = {
             "openai": OpenAIProvider(settings.OPENAI_API_KEY),
             "anthropic": AnthropicProvider(settings.ANTHROPIC_API_KEY),
             "xai": XAIProvider(settings.XAI_API_KEY),
+            "google": GeminiProvider(settings.GEMINI_API_KEY),
         }
         self.default_provider_models: Dict[str, str] = {
             "openai": "gpt-4o",
             "anthropic": "claude-3-opus-20240229",
             "xai": "grok-3-beta",
+            "google": "gemini-1.5-pro",
         }
         # Initialize Redis client
         self.redis_client = redis.Redis(
@@ -55,11 +59,14 @@ class ComparisonService:
             # Filter and process models
             filtered_models = defaultdict(list)
             for model_name, model_data in models.items():
+                
                 if not all(key in model_data for key in ["litellm_provider", "mode"]):
                     continue
                     
                 provider = model_data["litellm_provider"]
-                if provider not in self.providers or model_data["mode"] != "chat":
+                if provider == "vertex_ai-language-models":
+                    provider = "google"
+                if provider not in self.providers.keys() or model_data["mode"] != "chat":
                     continue
                 
                 if 'audio' in model_name or 'vision' in model_name or "ft:" in model_name:
@@ -75,7 +82,6 @@ class ComparisonService:
                 model_configs = []
                 provider = self.providers[provider_name]
                 supported_models = await provider.get_supported_models(models)
-                print(f"Supported models: {provider_name} {supported_models}")
                 for model in supported_models:
                     try:
                         model_config = ModelConfig(
@@ -137,7 +143,9 @@ class ComparisonService:
         
         try:
             async for chunk in provider.stream_response(prompt, max_tokens, model_name, pricing):
+                print(f"chunk: {chunk}", flush=True)
                 if isinstance(chunk, dict):
+                    print(f"chunk is dict: {chunk}", flush=True)
                     chunk['is_final'] = True
                     yield chunk
                 else:

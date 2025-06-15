@@ -14,6 +14,7 @@ app = FastAPI(
     title="AI Model Playground API",
     description="API for comparing responses from different AI models",
     version="1.0.0",
+    openapi_url=None,
 )
 
 # Configure CORS

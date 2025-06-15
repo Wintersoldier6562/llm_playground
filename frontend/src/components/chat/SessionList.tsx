@@ -24,6 +24,7 @@ interface SessionListProps {
 
 export const SessionList = ({ onSelectSession, selectedSessionId, onNewChat }: SessionListProps) => {
   const queryClient = useQueryClient();
+  console.log('selectedSessionId', selectedSessionId);
   const { data: sessions, isLoading } = useQuery<SessionsResponse>({
     queryKey: ['sessions'],
     queryFn: () => chatService.listSessions(),

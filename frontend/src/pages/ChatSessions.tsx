@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { SessionList } from '../components/chat/SessionList';
 import type { ChatSession } from '../services/chatService';
-import Page from '@atlaskit/page';
 import { useNavigate } from 'react-router-dom';
 import { CreateSessionModal } from '../components/chat/CreateSessionModal';
 

@@ -190,80 +190,89 @@ const ChatWindow = ({ session }: ChatWindowProps) => {
 
   if (sessionDataLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <Spinner size="large" />
+      <div className="p-8">
+        <div className="flex justify-center items-center h-64">
+          <Spinner size="large" />
+        </div>
       </div>
     );
   }
 
   if (sessionDataError || !sessionData) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-[#EF5C48]">Error loading chat history</div>
+      <div className="p-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-[#EF5C48]">Error loading chat history</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col transition-all duration-300 bg-[#22272B] rounded-md p-0">
-      <div className="p-4 border-b border-[#2C333A]">
-        <h2 className="text-lg font-semibold text-white">{session.title || 'Untitled Chat'}</h2>
-        <p className="text-sm text-[#B6C2CF]">
-          {session.model} ({session.provider})
-        </p>
-        {!session.is_active && (
-          <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-[#39424D] text-[#B6C2CF] rounded">
-            Inactive
-          </span>
-        )}
-        {isStreaming && (
-          <div className="text-xs text-[#579DFF] mt-1">
-            AI is typing...
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Chat</h1>
+      </div>
+      <div className="flex-1 flex flex-col transition-all duration-300 bg-[#22272B] rounded-md">
+        <div className="p-4 border-b border-[#2C333A]">
+          <h2 className="text-lg font-semibold text-white">{session.title || 'Untitled Chat'}</h2>
+          <p className="text-sm text-[#B6C2CF]">
+            {session.model} ({session.provider})
+          </p>
+          {!session.is_active && (
+            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-[#39424D] text-[#B6C2CF] rounded">
+              Inactive
+            </span>
+          )}
+          {isStreaming && (
+            <div className="text-xs text-[#579DFF] mt-1">
+              AI is typing...
+              <Button
+                appearance="danger"
+                spacing="compact"
+                onClick={handleStopStreaming}
+                className="ml-2"
+              >
+                Stop
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message, index) => (
+            <ChatMessageBubble
+              key={index}
+              message={message as ChatMessage}
+              isStreaming={isStreaming && index === messages.length - 1}
+            />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <form onSubmit={handleSendMessage} className="p-4 border-t border-[#2C333A] bg-[#22272B]">
+          <div className="flex space-x-2">
+            <Textfield
+              name="chat-input"
+              value={inputMessage}
+              onChange={e => setInputMessage((e.target as HTMLInputElement).value)}
+              placeholder="Type your message..."
+              isDisabled={isStreaming || !session.is_active}
+              elemAfterInput={null}
+              className="input"
+              style={{ background: 'var(--color-input-bg)', color: 'white', borderColor: 'var(--color-input-border)' }}
+            />
             <Button
-              appearance="danger"
-              spacing="compact"
-              onClick={handleStopStreaming}
-              className="ml-2"
+              type="submit"
+              appearance="primary"
+              isDisabled={isStreaming || !inputMessage.trim() || !session.is_active}
+              style={{ background: 'var(--color-primary)', color: 'var(--color-sidebar-active-text)' }}
             >
-              Stop
+              {isStreaming ? 'Sending...' : 'Send'}
             </Button>
           </div>
-        )}
+        </form>
       </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message, index) => (
-          <ChatMessageBubble
-            key={index}
-            message={message as ChatMessage}
-            isStreaming={isStreaming && index === messages.length - 1}
-          />
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-
-      <form onSubmit={handleSendMessage} className="p-4 border-t border-[#2C333A] bg-[#22272B]">
-        <div className="flex space-x-2">
-          <Textfield
-            name="chat-input"
-            value={inputMessage}
-            onChange={e => setInputMessage((e.target as HTMLInputElement).value)}
-            placeholder="Type your message..."
-            isDisabled={isStreaming || !session.is_active}
-            elemAfterInput={null}
-            className="input"
-            style={{ background: 'var(--color-input-bg)', color: 'white', borderColor: 'var(--color-input-border)' }}
-          />
-          <Button
-            type="submit"
-            appearance="primary"
-            isDisabled={isStreaming || !inputMessage.trim() || !session.is_active}
-            style={{ background: 'var(--color-primary)', color: 'var(--color-sidebar-active-text)' }}
-          >
-            {isStreaming ? 'Sending...' : 'Send'}
-          </Button>
-        </div>
-      </form>
     </div>
   );
 };

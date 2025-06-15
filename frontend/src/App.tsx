@@ -1,9 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Suspense, lazy } from 'react'
 import { PrivateRoute } from './components/PrivateRoute'
-import { UserMenu } from './components/UserMenu'
 import { useDispatch, useSelector } from 'react-redux'
 import type { AppDispatch, RootState } from './store'
 import { logout, setAuthFromStorage, fetchUserDetails } from './features/auth/authSlice'
@@ -12,10 +11,7 @@ import { SidebarProvider } from './contexts/SidebarContext'
 import { CreateSessionModal } from './components/chat/CreateSessionModal'
 import { ChatWindowWithSession } from './components/chat/ChatWindow';
 import { ComparisonDetail } from './components/ComparisonDetail';
-import DropdownMenu from '@atlaskit/dropdown-menu';
-import Popup from '@atlaskit/popup';
-import { createPortal } from 'react-dom';
-import UserIcon from './components/UserIcon'
+import { UserIcon } from './components/UserIcon';
 
 const queryClient = new QueryClient()
 
@@ -30,7 +26,6 @@ const ChatSessions = lazy(() => import('./pages/ChatSessions').then(m => ({ defa
 function Sidebar({ isAuthenticated }: { isAuthenticated: boolean}) {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -214,7 +209,6 @@ function AppContent() {
 }
 
 function App() {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   return (
     <SidebarProvider>
       <QueryClientProvider client={queryClient}>

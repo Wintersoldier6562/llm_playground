@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 
-const UserIcon: React.FC = () => {
+export const UserIcon: React.FC = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const user = useSelector((state: RootState) => state.auth.user); // Assumes user object has a 'name' property
   // You can fetch user info from state if you want to show initials or avatar

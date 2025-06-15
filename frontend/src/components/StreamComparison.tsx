@@ -7,7 +7,6 @@ import Checkbox from '@atlaskit/checkbox';
 import Select from '@atlaskit/select';
 import Spinner from '@atlaskit/spinner';
 import TextArea from '@atlaskit/textarea';
-import Tabs, { Tab, TabList, TabPanel } from '@atlaskit/tabs';
 import SectionMessage from '@atlaskit/section-message';
 // @ts-ignore
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';

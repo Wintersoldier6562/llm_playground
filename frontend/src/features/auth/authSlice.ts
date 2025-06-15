@@ -63,6 +63,18 @@ export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValu
   }
 });
 
+export const fetchUserDetails = createAsyncThunk(
+  'auth/fetchUserDetails',
+  async (_, { rejectWithValue }) => {
+    try {
+      const user = await auth.me();
+      return user;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch user details');
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -107,6 +119,13 @@ const authSlice = createSlice({
       .addCase(logout.rejected, (state, action: any) => {
         state.isAuthenticated = false;
         state.user = null;
+        state.error = action.payload;
+      })
+      .addCase(fetchUserDetails.fulfilled, (state, action: PayloadAction<User>) => {
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchUserDetails.rejected, (state, action: any) => {
         state.error = action.payload;
       });
   },

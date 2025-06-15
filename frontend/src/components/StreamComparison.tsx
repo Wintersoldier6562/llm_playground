@@ -51,7 +51,6 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
   const [showRateLimitModal, setShowRateLimitModal] = useState(false)
   const [responses, setResponses] = useState<Record<string, ModelResponse>>({})
   const [serverError, setServerError] = useState<string | null>(null);
-  const [tabIndices, setTabIndices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     comparison.getModels()
@@ -294,7 +293,6 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
         </div>
       )}
       <div className="card mx-auto p-8" style={{ width: '90vw', maxWidth: 1200, minWidth: 340 }}>
-        <h2 className="font-bold text-2xl text-[#F8FAFC] mb-6">Model Comparison</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
             <div className="label">Select Providers</div>
@@ -379,36 +377,20 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
       <div className="mt-8 grid gap-8 justify-center" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
         {selectedProviders.map(provider => {
           const response = responses[provider];
-          const tab = tabIndices[provider] || 0;
-          const handleTabChange = (newTab: number) => {
-            setTabIndices(prev => ({ ...prev, [provider]: newTab }));
-          };
           return (
             <div key={provider} className="card flex flex-col min-h-[220px] p-7">
               <h3 className="font-semibold mb-3 text-[#F8FAFC] capitalize">{provider}</h3>
               {response ? (
                 <>
-                  <Tabs id={`tabs-${provider}`} selected={tab} onChange={handleTabChange}>
-                    <TabList>
-                      <Tab>Markdown</Tab>
-                      <Tab>XML</Tab>
-                    </TabList>
-                    <TabPanel>
-                      {response.error
-                        ? <SectionMessage appearance="error">{response.error}</SectionMessage>
-                        : <div className="bg-[#23272B] rounded-md p-3 overflow-x-auto">
-                            <div className="prose prose-invert max-w-none"><ReactMarkdown>{response.content}</ReactMarkdown></div>
-                          </div>
-                      }
-                    </TabPanel>
-                    <TabPanel>
-                      <div className="bg-[#23272B] rounded-md p-3 overflow-x-auto">
-                        <SyntaxHighlighter language="xml" style={docco} showLineNumbers customStyle={{ background: '#23272B', color: '#F8FAFC' }}>
-                          {response.content}
-                        </SyntaxHighlighter>
+                  {response.error ? (
+                    <SectionMessage appearance="error">{response.error}</SectionMessage>
+                  ) : (
+                    <div className="bg-[#23272B] rounded-md p-3 overflow-x-auto">
+                      <div className="prose prose-invert max-w-none">
+                        <ReactMarkdown>{response.content}</ReactMarkdown>
                       </div>
-                    </TabPanel>
-                  </Tabs>
+                    </div>
+                  )}
                   {response.total_tokens > 0 && (
                     <div className="mt-4 text-xs text-[#94A3B8]">
                       <div>Tokens: {response.total_tokens}</div>

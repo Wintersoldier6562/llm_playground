@@ -2,8 +2,8 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { comparison } from '../services/api';
 import ReactMarkdown from 'react-markdown';
-import Page from '@atlaskit/page';
 import Spinner from '@atlaskit/spinner';
+import { useNavigate } from 'react-router-dom';
 
 const MODEL_NAMES: { [key: string]: string } = {
   'openai': 'OpenAI',
@@ -67,6 +67,7 @@ const ModelResponse = ({ response }: { response: any }) => {
 };
 
 export function History() {
+  const navigate = useNavigate();
   const { data: history, isLoading } = useQuery({
     queryKey: ['history'],
     queryFn: comparison.getHistory,
@@ -81,14 +82,19 @@ export function History() {
     },
   });
 
-  const handleDelete = async (promptId: string) => {
+  const handleDelete = async (e: React.MouseEvent, promptId: string) => {
+    e.stopPropagation(); // Prevent navigation when clicking delete
     if (window.confirm('Are you sure you want to delete this prompt?')) {
       deleteMutation.mutate(promptId);
     }
   };
 
+  const handleComparisonClick = (promptId: string) => {
+    navigate(`/comparison/${promptId}`);
+  };
+
   return (
-    <Page>
+    <div className="p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Comparison History</h1>
       </div>
@@ -99,7 +105,11 @@ export function History() {
       ) : (
         <div className="space-y-6">
           {history?.map((item: any) => (
-            <div key={item.prompt_id} className="card p-6 overflow-x-auto">
+            <div 
+              key={item.prompt_id} 
+              className="card p-6 overflow-x-auto cursor-pointer hover:shadow-lg transition-shadow duration-200"
+              onClick={() => handleComparisonClick(item.prompt_id)}
+            >
               <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6">
                 <div className="flex-1">
                   <div className="bg-[#23272F] rounded-lg p-4 border border-[#2C333A]">
@@ -128,7 +138,7 @@ export function History() {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleDelete(item.prompt_id)}
+                  onClick={(e) => handleDelete(e, item.prompt_id)}
                   className="mt-4 md:mt-0 ml-0 md:ml-4 text-[#EF5C48] hover:text-[#CA3521] transition-colors text-sm font-medium flex items-center gap-1"
                   title="Delete prompt"
                 >
@@ -149,6 +159,6 @@ export function History() {
           ))}
         </div>
       )}
-    </Page>
+    </div>
   );
 } 

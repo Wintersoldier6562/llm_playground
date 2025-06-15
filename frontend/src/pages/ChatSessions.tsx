@@ -26,16 +26,16 @@ export const ChatSessions: React.FC = () => {
   };
 
   return (
-    <Page>
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center w-full" style={{ background: 'var(--color-background)' }}>
-        <div className="flex flex-col w-full h-full px-8 py-12">
-          <h2 className="text-2xl font-bold text-[#F8FAFC] mb-6 text-center">Chat Sessions</h2>
-          <SessionList
-            onSelectSession={handleSelectSession}
-            selectedSessionId={undefined}
-            onNewChat={handleNewChat}
-          />
-        </div>
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Chat Sessions</h1>
+      </div>
+      <div className="flex flex-col w-full">
+        <SessionList
+          onSelectSession={handleSelectSession}
+          selectedSessionId={undefined}
+          onNewChat={handleNewChat}
+        />
       </div>
       <CreateSessionModal 
         isOpen={isCreateModalOpen} 
@@ -44,7 +44,7 @@ export const ChatSessions: React.FC = () => {
           setIsCreateModalOpen(false);
         }} 
       />
-    </Page>
+    </div>
   );
 };
 

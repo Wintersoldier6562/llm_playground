@@ -78,8 +78,10 @@ const ModelComparison: React.FC = () => {
 
   return (
     <Page>
-      <div className="card mx-auto mt-8 p-8" style={{ width: '90vw', maxWidth: 1200, minWidth: 340 }}>
-        <h2 className="font-bold text-2xl text-white mb-6">Model Comparison Table</h2>
+      <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Model Comparison Table</h1>
+      </div>
         {loading ? (
           <div className="flex justify-center items-center mt-10">
             <Spinner size="large" />

@@ -5,7 +5,7 @@ from app.core.database.session import get_db
 from app.core.services.auth_service import AuthService
 from app.core.schemas.auth import UserCreate, UserInDB, Token
 from app.core.dependencies import get_current_user
-from typing import Any
+from typing import Any, Dict
 from app.core.config import settings
 from app.core.database.models import User
 
@@ -30,7 +30,7 @@ async def register(
     user = await auth_service.create_user(db, user_in)
     return user
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Dict)
 async def login(
     credentials: dict,
     db: AsyncSession = Depends(get_db)
@@ -115,3 +115,17 @@ async def refresh_token(
             "is_active": user.is_active
         }
     } 
+
+@router.get("/me", response_model=Dict)
+async def get_current_user(
+    current_user: User = Depends(get_current_user)
+) -> Dict:
+    """
+    Get details of currently authenticated user.
+    """
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "is_active": current_user.is_active,
+    }

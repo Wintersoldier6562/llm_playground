@@ -1,13 +1,16 @@
 import React from 'react'
 import { StreamComparison } from '../components/StreamComparison'
+import { PageHeader } from '../components/PageHeader'
 
-export const StreamPage: React.FC = () => {
+const StreamPage: React.FC = () => {
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Compare Models</h1>
+    <>
+      <PageHeader title="Compare Models" />
+      <div className="p-8">
+        <StreamComparison />
       </div>
-      <StreamComparison />
-    </div>
+    </>
   )
-} 
+}
+
+export default StreamPage 

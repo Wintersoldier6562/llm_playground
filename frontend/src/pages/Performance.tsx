@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { comparison } from '../services/api';
 import Page from '@atlaskit/page';
 import Spinner from '@atlaskit/spinner';
+import { PageHeader } from '../components/PageHeader';
 
 const MODEL_NAMES: { [key: string]: string } = {
   'openai': 'OpenAI',
@@ -18,7 +19,7 @@ interface ModelMetrics {
   count: number;
 }
 
-export function Performance() {
+export const Performance: React.FC = () => {
   const { data: history, isLoading: isHistoryLoading, error: historyError } = useQuery({
     queryKey: ['history'],
     queryFn: comparison.getHistory,
@@ -106,11 +107,9 @@ export function Performance() {
   }
 
   return (
-    <Page>
+    <>
+      <PageHeader title="Model Performance" />
       <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">Model Performance</h1>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(MODEL_NAMES).map(([modelId, modelName]) => {
             const modelData = metrics[modelId];
@@ -197,6 +196,8 @@ export function Performance() {
           })}
         </div>
       </div>
-    </Page>
+    </>
   );
-} 
+}
+
+export default Performance; 

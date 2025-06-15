@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { comparison } from '../services/api';
 import Spinner from '@atlaskit/spinner';
-import Page from '@atlaskit/page';
 import AtlaskitSelect from '@atlaskit/select';
+import { PageHeader } from '../components/PageHeader';
 
 
 interface ProviderModel {
@@ -77,11 +77,9 @@ const ModelComparison: React.FC = () => {
   }, []);
 
   return (
-    <Page>
+    <>
+      <PageHeader title="Model Comparison Table" />
       <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Model Comparison Table</h1>
-      </div>
         {loading ? (
           <div className="flex justify-center items-center mt-10">
             <Spinner size="large" />
@@ -177,7 +175,7 @@ const ModelComparison: React.FC = () => {
           <div className="text-[#B6C2CF] mt-6">No models found.</div>
         )}
       </div>
-    </Page>
+    </>
   );
 };
 

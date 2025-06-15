@@ -3,6 +3,7 @@ import { SessionList } from '../components/chat/SessionList';
 import type { ChatSession } from '../services/chatService';
 import { useNavigate } from 'react-router-dom';
 import { CreateSessionModal } from '../components/chat/CreateSessionModal';
+import { PageHeader } from '../components/PageHeader';
 
 export const ChatSessions: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -25,25 +26,25 @@ export const ChatSessions: React.FC = () => {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Chat Sessions</h1>
-      </div>
-      <div className="flex flex-col w-full">
-        <SessionList
-          onSelectSession={handleSelectSession}
-          selectedSessionId={undefined}
-          onNewChat={handleNewChat}
+    <>
+      <PageHeader title="Chat Sessions" />
+      <div className="p-8">
+        <div className="flex flex-col w-full">
+          <SessionList
+            onSelectSession={handleSelectSession}
+            selectedSessionId={undefined}
+            onNewChat={handleNewChat}
+          />
+        </div>
+        <CreateSessionModal 
+          isOpen={isCreateModalOpen} 
+          onClose={() => {
+            console.log('Modal close button clicked');
+            setIsCreateModalOpen(false);
+          }} 
         />
       </div>
-      <CreateSessionModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => {
-          console.log('Modal close button clicked');
-          setIsCreateModalOpen(false);
-        }} 
-      />
-    </div>
+    </>
   );
 };
 

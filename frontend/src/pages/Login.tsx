@@ -17,7 +17,7 @@ export function Login() {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      navigate('/stream');
+      navigate('/chat');
     }
   }, [isAuthenticated, navigate]);
 

@@ -13,13 +13,13 @@ export const UserIcon: React.FC = () => {
 
   return (
     <div
-      className="fixed top-6 right-8 z-[9999] w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg cursor-pointer"
+      className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg cursor-pointer"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
       {hovered && user?.full_name && (
-        <div className="absolute right-12 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs rounded px-3 py-1 shadow-lg whitespace-nowrap pointer-events-none transition-opacity duration-150 opacity-100">
+        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-[#1E293B] text-white text-xs rounded px-3 py-1 shadow-lg whitespace-nowrap pointer-events-none transition-opacity duration-150 opacity-100 border border-[#334155] z-50">
           {user.full_name}
         </div>
       )}

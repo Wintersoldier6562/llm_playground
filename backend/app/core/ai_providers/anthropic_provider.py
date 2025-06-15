@@ -43,10 +43,16 @@ class AnthropicProvider(BaseAIProvider):
             start_time = time.time()
             input_tokens = 0
             output_tokens = 0
+
+            formatted_messages = []
+            for message in messages:
+                role = "assistant" if message["role"] == "system" else "user"
+                formatted_messages.append({"role": role, "content": message["content"]})
+
             stream = await self.client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
-                messages=messages,
+                messages=formatted_messages,
                 stream=True
             )
             async for chunk in stream:

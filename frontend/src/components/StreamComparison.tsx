@@ -137,54 +137,86 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
       }
       const reader = data.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = '';
       try {
         let streamError: string | null = null;
         while (true) {
           const { done, value } = await reader.read();
           if (done || streamError) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim());
+          
+          // Decode the chunk and add to buffer
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+          
+          // Split buffer into lines, keeping any incomplete line in the buffer
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep the last potentially incomplete line in buffer
+          
           for (const line of lines) {
+            if (!line.trim() || !line.startsWith('data: ')) continue;
+            
+            const dataStr = line.slice(6); // Remove 'data: ' prefix
+            if (dataStr === '[DONE]') continue;
+            
             try {
-              if (line.includes('data: [DONE]')) {
-                break;
-              }
-              const data = JSON.parse(line.replace('data: ', ''));
-              if (data.error) {
-                setServerError("Server Error: Please try again later");
-                streamError = data.error;
-                // clear the response
-                setResponses(prev => {
-                  const newResponses = { ...prev }
-                  selectedProviders.forEach(key => {
-                    newResponses[key] = { ...newResponses[key], content: '' }
+              // Only try to parse if it looks like a complete JSON object
+              if (dataStr.trim().startsWith('{') && dataStr.trim().endsWith('}')) {
+                const data = JSON.parse(dataStr);
+                if (data.error) {
+                  setServerError("Server Error: Please try again later");
+                  streamError = data.error;
+                  // clear the response
+                  setResponses(prev => {
+                    const newResponses = { ...prev }
+                    selectedProviders.forEach(key => {
+                      newResponses[key] = { ...newResponses[key], content: '' }
+                    })
+                    return newResponses
                   })
-                  return newResponses
+                }
+                setResponses(prev => {
+                  const currentResponse = prev[data.provider_name]
+                  if (!currentResponse) return prev
+                  const updatedResponse = {
+                    ...currentResponse,
+                    content: data.content ? currentResponse.content + data.content : currentResponse.content,
+                  }
+                  if (data.is_final) {
+                    updatedResponse.prompt_tokens = data.prompt_tokens
+                    updatedResponse.content = data.content
+                    updatedResponse.model_name = data.model_name
+                    updatedResponse.total_tokens = data.total_tokens
+                    updatedResponse.cost = data.cost
+                    updatedResponse.latency = data.latency
+                    updatedResponse.created_at = data.created_at
+                  }
+                  return {
+                    ...prev,
+                    [data.provider_name]: updatedResponse
+                  }
                 })
+              } else if (dataStr.trim()) {
+                // If it's not a complete JSON object but has content, append it to the current response
+                const providerName = Object.keys(responses)[0]; // Get the first provider since we're streaming
+                if (providerName) {
+                  setResponses(prev => {
+                    const currentResponse = prev[providerName];
+                    if (!currentResponse) return prev;
+                    return {
+                      ...prev,
+                      [providerName]: {
+                        ...currentResponse,
+                        content: currentResponse.content + dataStr
+                      }
+                    };
+                  });
+                }
               }
-              setResponses(prev => {
-                const currentResponse = prev[data.provider_name]
-                if (!currentResponse) return prev
-                const updatedResponse = {
-                  ...currentResponse,
-                  content: data.content ? currentResponse.content + data.content : currentResponse.content,
-                }
-                if (data.is_final) {
-                  updatedResponse.prompt_tokens = data.prompt_tokens
-                  updatedResponse.content = data.content
-                  updatedResponse.model_name = data.model_name
-                  updatedResponse.total_tokens = data.total_tokens
-                  updatedResponse.cost = data.cost
-                  updatedResponse.latency = data.latency
-                  updatedResponse.created_at = data.created_at
-                }
-                return {
-                  ...prev,
-                  [data.provider_name]: updatedResponse
-                }
-              })
             } catch (e) {
-              console.error('Error parsing stream chunk:', e);
+              // Only log parsing errors for complete JSON objects
+              if (dataStr.trim().startsWith('{') && dataStr.trim().endsWith('}')) {
+                console.error('Error parsing JSON:', e, 'Data:', dataStr);
+              }
             }
           }
         }

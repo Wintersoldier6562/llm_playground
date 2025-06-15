@@ -2,8 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database.session import get_db
-from app.core.config import settings
-import redis
 from app.core.database.models import User, Prompt, ModelResponse as DBModelResponse
 from app.core.schemas.comparison import (
     ComparisonRequest, 
@@ -14,10 +12,10 @@ from app.core.schemas.comparison import (
     ComparisonCreateRequest
 )
 from app.core.dependencies import get_current_user
-from typing import AsyncGenerator, List, Dict, Any
+from typing import AsyncGenerator, List, Dict
 from sqlalchemy import select
 import uuid
-from app.core.services.comparison_service import ComparisonService
+from app.core.services.model_service import ModelService
 from datetime import datetime, timezone
 from uuid import uuid4
 import asyncio
@@ -30,23 +28,23 @@ router = APIRouter()
 @router.get("/models")
 async def get_supported_models(
     req: Request,
-    comparison_service: ComparisonService = Depends(ComparisonService)
+    model_service: ModelService = Depends(ModelService)
 ) -> Dict[str, List[str]]:
     """
     Get all supported models from each AI provider.
     Returns a dictionary mapping provider names to their supported models.
     Cached in Redis for 24 hours.
     """
-    provider_models = await comparison_service.get_models()
+    provider_models = await model_service.get_models()
     # convert to dict of provider name to list of model_names
     return {provider_model.provider: [model_config.model_name for model_config in provider_model.models] for provider_model in provider_models}
 
 @router.get("/provider-models")
 async def get_supported_models_for_provider(
-    comparison_service: ComparisonService = Depends(ComparisonService)
+    model_service: ModelService = Depends(ModelService)
 ) -> List[ModelConfig]:
     
-    provider_models = await comparison_service.get_models()
+    provider_models = await model_service.get_models()
     # convert to list of ModelConfig
     model_configs = []
     for provider_model in provider_models:
@@ -58,7 +56,7 @@ async def stream_comparison(
     request: ComparisonRequest,
     req: Request,
     current_user: User = Depends(get_current_user),
-    comparison_service: ComparisonService = Depends(ComparisonService)
+    model_service: ModelService = Depends(ModelService)
 ) -> StreamingResponse:
     """
     Stream responses from multiple AI models for a given prompt.
@@ -70,9 +68,9 @@ async def stream_comparison(
             # Get models to compare
             if request.provider_models and len(request.provider_models.keys()) > 0:
                 for provider in request.provider_models.keys():
-                    if provider not in comparison_service.providers:
+                    if provider not in model_service.providers:
                         raise ValueError(f"Invalid provider: {provider}")
-            ai_providers = request.provider_models or comparison_service.default_provider_models
+            ai_providers = request.provider_models or model_service.default_provider_models
             max_tokens = request.max_tokens
             # Create prompt object
             prompt_obj = Prompt(
@@ -81,13 +79,13 @@ async def stream_comparison(
                 user_id=current_user.id,
                 created_at=datetime.now(timezone.utc)
             )
-            
+            messages = [{"role": "user", "content": request.prompt}]
             # Create streaming tasks for each model
             streams = []
             for provider, model_name in ai_providers.items():
-                if provider in comparison_service.providers:
-                    streams.append(comparison_service._get_model_response_stream(
-                        prompt_obj.id, provider, model_name, prompt_obj.content, max_tokens
+                if provider in model_service.providers:
+                    streams.append(model_service._get_model_response_stream(
+                        prompt_obj.id, messages, provider, model_name, max_tokens
                     ))
 
             # Process streams concurrently while yielding chunks immediately
@@ -159,7 +157,7 @@ async def stream_comparison(
 async def stream_comparison_free(
     request: ComparisonRequest,
     req: Request,
-    comparison_service: ComparisonService = Depends(ComparisonService)
+    model_service: ModelService = Depends(ModelService)
 ) -> StreamingResponse:
     """
     Stream responses from multiple AI models for a given prompt.
@@ -171,9 +169,9 @@ async def stream_comparison_free(
             # Get models to compare
             if request.provider_models and len(request.provider_models.keys()) > 0:
                 for provider in request.provider_models.keys():
-                    if provider not in comparison_service.providers:
+                    if provider not in model_service.providers:
                         raise ValueError(f"Invalid provider: {provider}")
-            ai_providers = request.provider_models or comparison_service.default_provider_models
+            ai_providers = request.provider_models or model_service.default_provider_models
             max_tokens = request.max_tokens
             # Create prompt object
             prompt_obj = Prompt(
@@ -182,14 +180,14 @@ async def stream_comparison_free(
                 user_id=str(uuid.uuid4()),
                 created_at=datetime.now(timezone.utc)
             )
-            
+            messages = [{"role": "user", "content": request.prompt}]
             # Create streaming tasks for each model
             streams = []
             for provider, model_name in ai_providers.items():
-                if provider in comparison_service.providers:
+                if provider in model_service.providers:
                     print(f"Streaming response from {provider} {model_name}", flush=True)
-                    streams.append(comparison_service._get_model_response_stream(
-                        prompt_obj.id, provider, model_name, prompt_obj.content, max_tokens
+                    streams.append(model_service._get_model_response_stream(
+                        prompt_obj.id, messages, provider, model_name, max_tokens
                     ))
 
             # Process streams concurrently while yielding chunks immediately
@@ -227,7 +225,6 @@ async def stream_comparison_free(
                         try:
                             response = future.result()
                             # Format as SSE
-                            print(f"response: {response}", flush=True)
                             yield f"data: {json.dumps(response)}\n\n"
                             
                             # If this was a final response, remove the queue
@@ -241,13 +238,10 @@ async def stream_comparison_free(
                     # Cancel any pending queue tasks
                     for task in pending:
                         task.cancel()
-                
-                print("done", flush=True)
                 # Send completion message
                 yield "data: [DONE]\n\n"
 
             async for chunk in process_streams():
-                print(f"chunk: {chunk}", flush=True)
                 yield chunk
 
         return StreamingResponse(
@@ -314,12 +308,12 @@ async def create_comparison(
     request: ComparisonCreateRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    comparison_service: ComparisonService = Depends(ComparisonService)
+    model_service: ModelService = Depends(ModelService)
 ) -> ComparisonResponse:
     """
     Create a new comparison with prompt and model responses.
     """
-    return await comparison_service.create_comparison(db, request, current_user)
+    return await model_service.create_comparison(db, request, current_user)
 
 @router.delete("/{prompt_id}")
 async def delete_prompt(

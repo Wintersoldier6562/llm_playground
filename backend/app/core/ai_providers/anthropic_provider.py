@@ -17,6 +17,16 @@ class AnthropicProvider(BaseAIProvider):
     async def get_supported_models(self, models: List[Dict]) -> List[Dict]:
         """Get list of supported models from Anthropic API."""
         try:
+            required_models = [
+                "claude-3-5-haiku-latest",
+                "claude-3-5-sonnet-latest",
+                "claude-3-7-sonnet-latest",
+                "claude-3-opus-latest",
+                "claude-3-haiku-latest",
+                "claude-3-sonnet-latest",
+                "claude-3-7-haiku-latest"
+            ]
+            models = [model for model in models if model["model_name"] in required_models]
             models.sort(key=lambda x: x["model_name"], reverse=True)
             return models
         except Exception as e:
@@ -28,7 +38,7 @@ class AnthropicProvider(BaseAIProvider):
                 "claude-3-haiku-20240307"
             ]
 
-    async def stream_response(self, prompt: str, max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
+    async def stream_response(self, messages: List[Dict[str, str]], max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
         try:
             start_time = time.time()
             input_tokens = 0
@@ -36,7 +46,7 @@ class AnthropicProvider(BaseAIProvider):
             stream = await self.client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
                 stream=True
             )
             async for chunk in stream:

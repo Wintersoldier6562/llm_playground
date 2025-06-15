@@ -5,10 +5,8 @@ import { useMutation } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import Checkbox from '@atlaskit/checkbox';
 import Select from '@atlaskit/select';
-import Button from '@atlaskit/button/standard-button';
 import Spinner from '@atlaskit/spinner';
 import TextArea from '@atlaskit/textarea';
-import Page from '@atlaskit/page';
 import Tabs, { Tab, TabList, TabPanel } from '@atlaskit/tabs';
 import SectionMessage from '@atlaskit/section-message';
 // @ts-ignore
@@ -175,7 +173,8 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
                 }
                 if (data.is_final) {
                   updatedResponse.prompt_tokens = data.prompt_tokens
-                  updatedResponse.completion_tokens = data.completion_tokens
+                  updatedResponse.content = data.content
+                  updatedResponse.model_name = data.model_name
                   updatedResponse.total_tokens = data.total_tokens
                   updatedResponse.cost = data.cost
                   updatedResponse.latency = data.latency
@@ -238,15 +237,15 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
   const hasResponses = selectedProviders.some(provider => responses[provider] && responses[provider].content)
 
   return (
-    <Page>
+    <div className="min-h-screen bg-[#0F172A] py-8">
       {showRateLimitModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-[#1E293B] rounded-lg p-6 max-w-md w-full mx-4 border border-[#334155] shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Rate Limit Exceeded</h3>
+              <h3 className="text-lg font-medium text-[#F8FAFC]">Rate Limit Exceeded</h3>
               <button
                 onClick={() => setShowRateLimitModal(false)}
-                className="text-gray-400 hover:text-gray-500"
+                className="text-[#94A3B8] hover:text-[#F8FAFC]"
               >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -254,29 +253,27 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
               </button>
             </div>
             <div className="mt-2">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[#94A3B8]">
                 You've reached the limit of 2 requests per hour. Sign in to get unlimited access to all features.
               </p>
             </div>
             <div className="mt-4 flex justify-end space-x-3">
-              <Button appearance="subtle" onClick={() => setShowRateLimitModal(false)}>
+              <button className="btn-secondary" onClick={() => setShowRateLimitModal(false)}>
                 Close
-              </Button>
-              <Button appearance="primary" href="/login">
-                Sign In
-              </Button>
+              </button>
+              <a href="/login" className="btn-primary">Sign In</a>
             </div>
           </div>
         </div>
       )}
       {serverError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-[#1E293B] rounded-lg p-6 max-w-md w-full mx-4 border border-[#334155] shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Server Error</h3>
+              <h3 className="text-lg font-medium text-[#F8FAFC]">Server Error</h3>
               <button
                 onClick={() => setServerError(null)}
-                className="text-gray-400 hover:text-gray-500"
+                className="text-[#94A3B8] hover:text-[#F8FAFC]"
               >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -284,53 +281,48 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
               </button>
             </div>
             <div className="mt-2">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[#94A3B8]">
                 {serverError}
               </p>
             </div>
             <div className="mt-4 flex justify-end space-x-3">
-              <Button appearance="primary" onClick={() => setServerError(null)}>
+              <button className="btn-primary" onClick={() => setServerError(null)}>
                 Close
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       )}
-      <div style={{
-        background: 'white',
-        borderRadius: 12,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-        padding: 50,
-        marginTop: 50,
-        width: '100vw',
-        maxWidth: 1200,
-        minWidth: 340,
-        marginLeft: 'auto',
-        marginRight: 'auto',
-      }}>
-        <h2 style={{ fontWeight: 700, fontSize: 28, marginBottom: 24 }}>Model Comparison</h2>
+      <div className="card mx-auto p-8" style={{ width: '90vw', maxWidth: 1200, minWidth: 340 }}>
+        <h2 className="font-bold text-2xl text-[#F8FAFC] mb-6">Model Comparison</h2>
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontWeight: 500, marginBottom: 8 }}>Select Providers</div>
+          <div className="mb-6">
+            <div className="label">Select Providers</div>
             <div>
               {Object.keys(providerModelsData).map(provider => (
-                <div key={provider} style={{ minWidth: 600, maxWidth: 600, flex: 1,display: 'flex', alignItems: 'center', marginBottom: 16, gap: 24 }}>
+                <div key={provider} className="flex items-center mb-4 gap-6" style={{ minWidth: 340, maxWidth: 600 }}>
                   <div style={{ width: 140, flexShrink: 0 }}>
                     <Checkbox
                       isChecked={selectedProviders.includes(provider)}
                       onChange={() => handleProviderChange(provider)}
-                      label={provider.charAt(0).toUpperCase() + provider.slice(1)}
+                      label={<span className="text-[#F8FAFC]">{provider.charAt(0).toUpperCase() + provider.slice(1)}</span>}
                       name={provider}
                     />
                   </div>
                   {selectedProviders.includes(provider) && (
-                    <div style={{ minWidth: 600, maxWidth: 600, flex: 1, display: 'flex', alignItems: 'center' }}>
+                    <div className="flex-1 min-w-0">
                       <Select
                         options={providerModelsData[provider].map(model => ({ label: model, value: model }))}
                         value={selectedModels[provider] ? { label: selectedModels[provider], value: selectedModels[provider] } : null}
                         onChange={option => handleModelChange(provider, option?.value || '')}
                         placeholder="Select a model"
                         isSearchable
+                        styles={{
+                          control: base => ({ ...base, background: 'var(--color-input-bg)', borderColor: 'var(--color-input-border)', color: 'var(--color-neutral)' }),
+                          menu: base => ({ ...base, backgroundColor: 'var(--color-surface)', color: 'var(--color-neutral)', zIndex: 20 }),
+                          singleValue: base => ({ ...base, color: 'var(--color-neutral)' }),
+                          option: (base, state) => ({ ...base, background: state.isFocused ? 'var(--color-primary)' : 'var(--color-surface)', color: 'var(--color-neutral)' })
+                        }}
                       />
                     </div>
                   )}
@@ -338,51 +330,53 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
               ))}
             </div>
           </div>
-          <div style={{ marginBottom: 24, maxWidth: 340 }}>
-            <div style={{ fontWeight: 500, marginBottom: 8 }}>Max Tokens</div>
+          <div className="mb-6 max-w-xs">
+            <div className="label">Max Tokens</div>
             <Select
               options={MAX_TOKENS_OPTIONS.map(opt => ({ label: opt.label, value: opt.value }))}
               value={MAX_TOKENS_OPTIONS.find(opt => opt.value === maxTokens) ? { label: MAX_TOKENS_OPTIONS.find(opt => opt.value === maxTokens)!.label, value: maxTokens } : null}
               onChange={option => setMaxTokens(option?.value || 2048)}
               placeholder="Select max tokens"
+              styles={{
+                control: base => ({ ...base, background: 'var(--color-input-bg)', borderColor: 'var(--color-input-border)', color: 'var(--color-neutral)' }),
+                menu: base => ({ ...base, backgroundColor: 'var(--color-surface)', color: 'var(--color-neutral)', zIndex: 20 }),
+                singleValue: base => ({ ...base, color: 'var(--color-neutral)' }),
+                option: (base, state) => ({ ...base, background: state.isFocused ? 'var(--color-primary)' : 'var(--color-surface)', color: 'var(--color-neutral)' })
+              }}
             />
           </div>
-          <div style={{ marginBottom: 24, maxWidth: 600 }}>
-            <div style={{ fontWeight: 500, marginBottom: 8 }}>Enter your prompt</div>
+          <div className="mb-6 max-w-xl">
+            <div className="label">Enter your prompt</div>
             <TextArea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               placeholder="Type your prompt here..."
+              className="input"
+              style={{ minHeight: 80 }}
             />
           </div>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 24 }}>
-            <Button
-              appearance="primary"
+          <div className="flex gap-4 items-center mb-6">
+            <button
+              className="btn-primary"
               type="submit"
-              isDisabled={isLoading || !prompt.trim() || selectedProviders.length === 0 || selectedProviders.some(p => !selectedModels[p])}
+              disabled={isLoading || !prompt.trim() || selectedProviders.length === 0 || selectedProviders.some(p => !selectedModels[p])}
             >
               {isLoading ? <Spinner size="small" /> : 'Compare Models'}
-            </Button>
+            </button>
             {hasResponses && !isSaved && !isFreeTier && (
-              <Button
-                appearance="default"
+              <button
+                className="btn-secondary"
+                type="button"
                 onClick={handleSave}
-                isDisabled={isSaving}
+                disabled={isSaving}
               >
                 {isSaving ? <Spinner size="small" /> : 'Save Comparison'}
-              </Button>
+              </button>
             )}
           </div>
         </form>
       </div>
-      <div style={{
-        marginTop: 32,
-        width: '100%',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-        gap: 32,
-        justifyContent: 'center',
-      }}>
+      <div className="mt-8 grid gap-8 justify-center" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
         {selectedProviders.map(provider => {
           const response = responses[provider];
           const tab = tabIndices[provider] || 0;
@@ -390,18 +384,8 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
             setTabIndices(prev => ({ ...prev, [provider]: newTab }));
           };
           return (
-            <div key={provider} style={{
-              background: '#FAFBFC',
-              borderRadius: 10,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-              padding: 28,
-              minHeight: 220,
-              minWidth: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'stretch',
-            }}>
-              <h3 style={{ fontWeight: 600, marginBottom: 12, textTransform: 'capitalize' }}>{provider}</h3>
+            <div key={provider} className="card flex flex-col min-h-[220px] p-7">
+              <h3 className="font-semibold mb-3 text-[#F8FAFC] capitalize">{provider}</h3>
               {response ? (
                 <>
                   <Tabs id={`tabs-${provider}`} selected={tab} onChange={handleTabChange}>
@@ -412,21 +396,21 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
                     <TabPanel>
                       {response.error
                         ? <SectionMessage appearance="error">{response.error}</SectionMessage>
-                        : <div style={{ background: 'white', borderRadius: 4, padding: 12, overflowX: 'auto' }}>
-                            <ReactMarkdown>{response.content}</ReactMarkdown>
+                        : <div className="bg-[#23272B] rounded-md p-3 overflow-x-auto">
+                            <div className="prose prose-invert max-w-none"><ReactMarkdown>{response.content}</ReactMarkdown></div>
                           </div>
                       }
                     </TabPanel>
                     <TabPanel>
-                      <div style={{ background: 'white', borderRadius: 4, padding: 12, overflowX: 'auto' }}>
-                        <SyntaxHighlighter language="xml" style={docco} showLineNumbers>
+                      <div className="bg-[#23272B] rounded-md p-3 overflow-x-auto">
+                        <SyntaxHighlighter language="xml" style={docco} showLineNumbers customStyle={{ background: '#23272B', color: '#F8FAFC' }}>
                           {response.content}
                         </SyntaxHighlighter>
                       </div>
                     </TabPanel>
                   </Tabs>
                   {response.total_tokens > 0 && (
-                    <div style={{ marginTop: 16, fontSize: 13, color: '#6B778C' }}>
+                    <div className="mt-4 text-xs text-[#94A3B8]">
                       <div>Tokens: {response.total_tokens}</div>
                       <div>Latency: {response.latency.toFixed(2)}s</div>
                       {!isFreeTier && <div>Cost: ${response.cost.toFixed(4)}</div>}
@@ -440,6 +424,6 @@ export const StreamComparison: React.FC<StreamComparisonProps> = ({ isFreeTier =
           );
         })}
       </div>
-    </Page>
+    </div>
   )
 } 

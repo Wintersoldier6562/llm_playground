@@ -18,7 +18,17 @@ class OpenAIProvider(BaseAIProvider):
         """Get list of supported models from OpenAI API."""
         try:
             # sort models by model_name descending and include gpt- models first and then other models
-            models.sort(key=lambda x: (x["model_name"].startswith("gpt-"), x["model_name"]), reverse=True)
+            required_models = [
+                "gpt-3.5-turbo",
+                "gpt-4",
+                "gpt-4-turbo",
+                "gpt-4.1",
+                "gpt-4.1-mini",
+                "gpt-4.1-nano",
+                
+            ]
+            models = [model for model in models if model["model_name"] in required_models]
+            models.sort(key=lambda x: x["model_name"], reverse=True)
             return models
         except Exception as e:
             # Fallback to known models if API call fails
@@ -30,12 +40,12 @@ class OpenAIProvider(BaseAIProvider):
             ]
     
     
-    async def stream_response(self, prompt: str, max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
+    async def stream_response(self, messages: List[Dict[str, str]], max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
         try:
             start_time = time.time()
             stream = await self.client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
                 max_tokens=max_tokens,
                 stream=True,
                 stream_options={

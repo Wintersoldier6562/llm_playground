@@ -13,12 +13,11 @@ from app.core.ai_providers.gemini_provider import GeminiProvider
 from app.core.database.models import Prompt, ModelResponse, User
 from app.core.schemas.comparison import  ComparisonCreateRequest, ComparisonResponse, ModelResponse as ModelResponseSchema, ModelConfig, ProviderModels
 from app.core.config import settings
-from datetime import datetime, timezone
 from typing import AsyncGenerator
 from sqlalchemy import select
 from collections import defaultdict
 
-class ComparisonService:
+class ModelService:
     def __init__(self):
         self.providers: Dict[str, BaseAIProvider] = {
             "openai": OpenAIProvider(settings.OPENAI_API_KEY),
@@ -113,7 +112,7 @@ class ComparisonService:
             return provider_models
     
     async def _get_model_response_stream(
-        self, prompt_id: str, provider_name:str, model_name: str, prompt: str, max_tokens: int
+        self, prompt_id: str, messages: List[Dict[str, str]], provider_name:str, model_name: str, max_tokens: int
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Get streaming response from a specific model.
@@ -140,19 +139,20 @@ class ComparisonService:
             raise ValueError(f"ModelConfig for {model_name} not found for provider {provider_name}")
 
         print(f"Streaming response from {provider_name} {model_name} {provider}")
-        
+        collected_content = ""
         try:
-            async for chunk in provider.stream_response(prompt, max_tokens, model_name, pricing):
-                print(f"chunk: {chunk}", flush=True)
+            async for chunk in provider.stream_response(messages, max_tokens, model_name, pricing):
                 if isinstance(chunk, dict):
-                    print(f"chunk is dict: {chunk}", flush=True)
                     chunk['is_final'] = True
+                    chunk['content'] = collected_content
+                    print(f"final chunk: {chunk}", flush=True)
                     yield chunk
                 else:
                     if "Exception Occured: " in chunk:
                         exception_message = chunk.split("Exception Occured: ")[1]
                         raise Exception(exception_message)
                     else:
+                        collected_content += chunk
                         yield {
                             "provider_name": provider_name,
                             "model_name": model_name,

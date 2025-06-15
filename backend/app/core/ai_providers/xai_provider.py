@@ -17,22 +17,26 @@ class XAIProvider(BaseAIProvider):
     async def get_supported_models(self, models: List[Dict]) -> List[Dict]:
         """Get list of supported models from XAI API."""
         try:
-    
             # sort models by model_name descending and include grok- models first and then exclude grok-beta model
-            models.sort(key=lambda x: (x["model_name"].startswith("grok-"), x["model_name"]), reverse=True)
-            # exclude grok-beta model
-            models = [model for model in models if not model["model_name"] == "grok-beta"]
+            required_models = [
+                "grok-3-mini-fast-latest",
+                "grok-3-fast-latest",
+                "grok-3",
+                "grok-2-latest",
+            ]
+            models = [model for model in models if model["model_name"] in required_models]
+            models.sort(key=lambda x: x["model_name"], reverse=True)
             return models
         except Exception as e:
             # Fallback to known models if API call fails
             return [{"model_name": "grok-3-beta"}]
     
-    async def stream_response(self, prompt: str, max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
+    async def stream_response(self, messages: List[Dict[str, str]], max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
         try:
             start_time = time.time()
             stream = await self.client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
                 max_tokens=max_tokens,
                 stream=True,
                 stream_options={

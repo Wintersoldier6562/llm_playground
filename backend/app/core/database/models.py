@@ -18,6 +18,7 @@ class User(Base):
 
     # Relationships
     prompts = relationship("Prompt", back_populates="user")
+    chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
 
 class Prompt(Base):
     __tablename__ = "prompts"
@@ -45,3 +46,38 @@ class ModelResponse(Base):
     latency = Column(Float, nullable=False)  # Response time in seconds
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     prompt = relationship("Prompt", back_populates="responses") 
+
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(UUID, primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=False)
+    provider = Column(String, nullable=False)  # e.g., "openai", "anthropic"
+    model = Column(String, nullable=False)     # e.g., "gpt-4", "claude-3-opus"
+    title = Column(String, nullable=True)      # Optional session title
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="chat_sessions")
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(UUID, primary_key=True, default=uuid.uuid4)
+    session_id = Column(UUID, ForeignKey("chat_sessions.id"), nullable=False)
+    role = Column(String, nullable=False)  # e.g., "user", "assistant", "system"
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Token usage and metrics
+    prompt_tokens = Column(Integer, nullable=True)
+    completion_tokens = Column(Integer, nullable=True)
+    total_tokens = Column(Integer, nullable=True)
+    cost = Column(Float, nullable=True)
+    latency = Column(Float, nullable=True)  # Response time in seconds
+
+    # Relationships
+    session = relationship("ChatSession", back_populates="messages") 

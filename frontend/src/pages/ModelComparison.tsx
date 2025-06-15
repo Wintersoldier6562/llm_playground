@@ -4,6 +4,7 @@ import Spinner from '@atlaskit/spinner';
 import Page from '@atlaskit/page';
 import AtlaskitSelect from '@atlaskit/select';
 
+
 interface ProviderModel {
   model_name: string;
   max_tokens: number;
@@ -77,27 +78,16 @@ const ModelComparison: React.FC = () => {
 
   return (
     <Page>
-      <div style={{
-        background: 'white',
-        borderRadius: 12,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-        padding: 40,
-        marginTop: 32,
-        width: '90vw',
-        maxWidth: 1200,
-        minWidth: 340,
-        marginLeft: 'auto',
-        marginRight: 'auto',
-      }}>
-        <h2 style={{ fontWeight: 700, fontSize: 28, marginBottom: 24 }}>Model Comparison Table</h2>
+      <div className="card mx-auto mt-8 p-8" style={{ width: '90vw', maxWidth: 1200, minWidth: 340 }}>
+        <h2 className="font-bold text-2xl text-white mb-6">Model Comparison Table</h2>
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
+          <div className="flex justify-center items-center mt-10">
             <Spinner size="large" />
           </div>
         ) : error ? (
-          <div style={{ color: 'red', marginTop: 24 }}>{error}</div>
+          <div className="text-[#EF5C48] mt-6">{error}</div>
         ) : (
-          <div style={{ marginBottom: 24, display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div className="mb-6 flex gap-4 items-center">
             <div style={{ minWidth: 220, flex: 1 }}>
               <AtlaskitSelect
                 options={providerOptions}
@@ -107,7 +97,9 @@ const ModelComparison: React.FC = () => {
                 onChange={opts => setProviderFilters(opts ? opts.map(o => o.value) : [])}
                 styles={{
                   container: base => ({ ...base, minWidth: 200 }),
-                  menu: base => ({ ...base, backgroundColor: 'white', zIndex: 20 })
+                  menu: base => ({ ...base, backgroundColor: 'var(--color-surface)', color: 'white', zIndex: 20 }),
+                  singleValue: base => ({ ...base, color: 'white' }),
+                  option: (base, state) => ({ ...base, background: state.isFocused ? 'var(--color-primary)' : 'var(--color-surface)', color: 'white' })
                 }}
               />
             </div>
@@ -120,44 +112,41 @@ const ModelComparison: React.FC = () => {
                 onChange={opts => setModelFilters(opts ? opts.map(o => o.value) : [])}
                 styles={{
                   container: base => ({ ...base, minWidth: 200 }),
-                  menu: base => ({ ...base, backgroundColor: 'white', zIndex: 20 })
+                  menu: base => ({ ...base, backgroundColor: 'var(--color-surface)', color: 'white', zIndex: 20 }),
+                  singleValue: base => ({ ...base, color: 'white' }),
+                  option: (base, state) => ({ ...base, background: state.isFocused ? 'var(--color-primary)' : 'var(--color-surface)', color: 'white' })
                 }}
               />
             </div>
           </div>
         )}
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
+          <div className="flex justify-center items-center mt-10">
             <Spinner size="large" />
           </div>
         ) : error ? (
-          <div style={{ color: 'red', marginTop: 24 }}>{error}</div>
+          <div className="text-[#EF5C48] mt-6">{error}</div>
         ) : (
-          <div style={{ overflowX: 'auto', marginTop: 0 }}>
+          <div className="overflow-x-auto mt-0">
             <table
-              style={{
-                width: '100%',
-                borderCollapse: 'separate',
-                borderSpacing: 0,
-                minWidth: 700,
-                overflow: 'hidden',
-              }}
+              className="w-full min-w-[700px] border-separate border-spacing-0 overflow-hidden"
+              style={{ background: 'var(--color-surface)' }}
             >
               <thead>
-                <tr style={{ background: '#F4F5F7' }}>
-                  <th onClick={() => handleSort('provider')} style={{ position: 'sticky', top: 0, zIndex: 1, padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: 15, color: '#253858', borderBottom: '1px solid #DFE1E6', cursor: 'pointer', userSelect: 'none' }}>
+                <tr style={{ background: '#23272B' }}>
+                  <th onClick={() => handleSort('provider')} className="p-4 text-left font-semibold text-[#B6C2CF] border-b border-[#2C333A] cursor-pointer select-none">
                     Provider {sortKey === 'provider' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
                   </th>
-                  <th onClick={() => handleSort('model_name')} style={{ position: 'sticky', top: 0, zIndex: 1, padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: 15, color: '#253858', borderBottom: '1px solid #DFE1E6', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('model_name')} className="p-4 text-left font-semibold text-[#B6C2CF] border-b border-[#2C333A] cursor-pointer select-none">
                     Model {sortKey === 'model_name' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
                   </th>
-                  <th onClick={() => handleSort('max_tokens')} style={{ position: 'sticky', top: 0, zIndex: 1, padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: 15, color: '#253858', borderBottom: '1px solid #DFE1E6', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('max_tokens')} className="p-4 text-left font-semibold text-[#B6C2CF] border-b border-[#2C333A] cursor-pointer select-none">
                     Max Tokens {sortKey === 'max_tokens' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
                   </th>
-                  <th onClick={() => handleSort('input_cost_per_token')} style={{ position: 'sticky', top: 0, zIndex: 1, padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: 15, color: '#253858', borderBottom: '1px solid #DFE1E6', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('input_cost_per_token')} className="p-4 text-left font-semibold text-[#B6C2CF] border-b border-[#2C333A] cursor-pointer select-none">
                     Input Cost/1k-Tokens {sortKey === 'input_cost_per_token' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
                   </th>
-                  <th onClick={() => handleSort('output_cost_per_token')} style={{ position: 'sticky', top: 0, zIndex: 1, padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: 15, color: '#253858', borderBottom: '1px solid #DFE1E6', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('output_cost_per_token')} className="p-4 text-left font-semibold text-[#B6C2CF] border-b border-[#2C333A] cursor-pointer select-none">
                     Output Cost/1k-Tokens {sortKey === 'output_cost_per_token' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
                   </th>
                 </tr>
@@ -166,19 +155,16 @@ const ModelComparison: React.FC = () => {
                 {filteredModels.map((model, idx) => (
                   <tr
                     key={`${model.provider}-${model.model_name}`}
-                    style={{
-                      background: idx % 2 === 0 ? '#FAFBFC' : 'white',
-                      transition: 'background 0.2s',
-                      cursor: 'pointer',
-                    }}
-                    onMouseOver={e => (e.currentTarget.style.background = '#E6FCFF')}
-                    onMouseOut={e => (e.currentTarget.style.background = idx % 2 === 0 ? '#FAFBFC' : 'white')}
+                    className={idx % 2 === 0 ? 'bg-[#23272B]' : 'bg-[#1B2638]'}
+                    style={{ transition: 'background 0.2s', cursor: 'pointer' }}
+                    onMouseOver={e => (e.currentTarget.style.background = '#2C333A')}
+                    onMouseOut={e => (e.currentTarget.style.background = idx % 2 === 0 ? '#23272B' : '#1B2638')}
                   >
-                    <td style={{ padding: '12px 18px', borderBottom: '1px solid #F4F5F7', fontSize: 15 }}>{model.provider.charAt(0).toUpperCase() + model.provider.slice(1).toLowerCase()}</td>
-                    <td style={{ padding: '12px 18px', borderBottom: '1px solid #F4F5F7', fontSize: 15 }}>{model.model_name}</td>
-                    <td style={{ padding: '12px 18px', borderBottom: '1px solid #F4F5F7', fontSize: 15 }}>{model.max_tokens}</td>
-                    <td style={{ padding: '12px 18px', borderBottom: '1px solid #F4F5F7', fontSize: 15 }}>{(model.input_cost_per_token*1000).toFixed(4)}</td>
-                    <td style={{ padding: '12px 18px', borderBottom: '1px solid #F4F5F7', fontSize: 15 }}>{(model.output_cost_per_token*1000).toFixed(4)}</td>
+                    <td className="p-4 border-b border-[#2C333A] text-[#B6C2CF] text-base">{model.provider.charAt(0).toUpperCase() + model.provider.slice(1).toLowerCase()}</td>
+                    <td className="p-4 border-b border-[#2C333A] text-[#B6C2CF] text-base">{model.model_name}</td>
+                    <td className="p-4 border-b border-[#2C333A] text-[#B6C2CF] text-base">{model.max_tokens}</td>
+                    <td className="p-4 border-b border-[#2C333A] text-[#B6C2CF] text-base">{(model.input_cost_per_token*1000).toFixed(4)}</td>
+                    <td className="p-4 border-b border-[#2C333A] text-[#B6C2CF] text-base">{(model.output_cost_per_token*1000).toFixed(4)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -186,7 +172,7 @@ const ModelComparison: React.FC = () => {
           </div>
         )}
         {!loading && models.length === 0 && !error && (
-          <div style={{ marginTop: 24 }}>No models found.</div>
+          <div className="text-[#B6C2CF] mt-6">No models found.</div>
         )}
       </div>
     </Page>

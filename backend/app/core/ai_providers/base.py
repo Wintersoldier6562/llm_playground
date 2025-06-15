@@ -22,7 +22,7 @@ class BaseAIProvider(ABC):
         pass
     
     @abstractmethod
-    async def stream_response(self, prompt: str, max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
+    async def stream_response(self, messages: List[Dict[str, str]], max_tokens: int, model: str, pricing: Dict[str, float]) -> AsyncGenerator[str, None]:
         """Stream the response from the provider."""
         pass
 

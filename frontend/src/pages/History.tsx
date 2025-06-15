@@ -2,6 +2,8 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { comparison } from '../services/api';
 import ReactMarkdown from 'react-markdown';
+import Page from '@atlaskit/page';
+import Spinner from '@atlaskit/spinner';
 
 const MODEL_NAMES: { [key: string]: string } = {
   'openai': 'OpenAI',
@@ -86,45 +88,34 @@ export function History() {
   };
 
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: 12,
-      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-      padding: 40,
-      marginTop: 32,
-      width: '90vw',
-      maxWidth: 1200,
-      minWidth: 340,
-      marginLeft: 'auto',
-      marginRight: 'auto',
-    }}>
+    <Page>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#172B4D]">Comparison History</h1>
+        <h1 className="text-2xl font-bold text-white">Comparison History</h1>
       </div>
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0052CC]"></div>
+          <Spinner size="large" />
         </div>
       ) : (
         <div className="space-y-6">
           {history?.map((item: any) => (
-            <div key={item.prompt_id} className="bg-white shadow rounded-lg p-6 overflow-x-auto">
+            <div key={item.prompt_id} className="card p-6 overflow-x-auto">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6">
                 <div className="flex-1">
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <div className="bg-[#23272F] rounded-lg p-4 border border-[#2C333A]">
                     <div className="flex items-center gap-2 mb-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#B6C2CF]" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                       </svg>
-                      <span className="text-sm font-medium text-gray-500">Prompt</span>
+                      <span className="text-sm font-medium text-[#B6C2CF]">Prompt</span>
                     </div>
-                    <p className="text-[#172B4D] font-mono text-sm break-words whitespace-pre-wrap">{item.prompt}</p>
+                    <p className="text-white font-mono text-sm break-words whitespace-pre-wrap">{item.prompt}</p>
                   </div>
                   <div className="flex items-center gap-2 mt-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#B6C2CF]" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                     </svg>
-                    <time className="text-sm text-gray-500" dateTime={item.created_at}>
+                    <time className="text-sm text-[#B6C2CF]" dateTime={item.created_at}>
                       {new Date(item.created_at).toLocaleString(undefined, {
                         year: 'numeric',
                         month: 'short',
@@ -138,7 +129,7 @@ export function History() {
                 </div>
                 <button
                   onClick={() => handleDelete(item.prompt_id)}
-                  className="mt-4 md:mt-0 ml-0 md:ml-4 text-[#DE350B] hover:text-[#FF5630] transition-colors text-sm font-medium flex items-center gap-1"
+                  className="mt-4 md:mt-0 ml-0 md:ml-4 text-[#EF5C48] hover:text-[#CA3521] transition-colors text-sm font-medium flex items-center gap-1"
                   title="Delete prompt"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -158,6 +149,6 @@ export function History() {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 } 

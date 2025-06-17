@@ -83,7 +83,19 @@ export const CreateSessionModal: React.FC<CreateSessionModalProps> = ({ isOpen, 
   const [title, setTitle] = React.useState('');
   const [selectedProvider, setSelectedProvider] = React.useState<string | null>(null);
   const [selectedModel, setSelectedModel] = React.useState<Model | null>(null);
+  const [sessionType, setSessionType] = React.useState<string>('conversation');
+  const [context, setContext] = React.useState('');
   
+  // Reset form when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setTitle('');
+      setSessionType('conversation');
+      setContext('');
+      // Don't reset provider and model as they should persist
+    }
+  }, [isOpen]);
+
   const { data: models, isLoading: isLoadingModels } = useQuery({
     queryKey: ['providerModels'],
     queryFn: async () => {
@@ -145,11 +157,13 @@ export const CreateSessionModal: React.FC<CreateSessionModalProps> = ({ isOpen, 
     e.preventDefault();
     if (!selectedModel) return;
     
-    console.log('Form submitted:', { title, selectedModel });
+    console.log('Form submitted:', { title, selectedModel, sessionType, context });
     createMutation.mutate({
       title: title.trim() || undefined,
       model: selectedModel.id,
       provider: selectedModel.provider,
+      session_type: sessionType,
+      context: context.trim() || undefined,
     });
   };
 
@@ -241,6 +255,36 @@ export const CreateSessionModal: React.FC<CreateSessionModalProps> = ({ isOpen, 
             )}
             <p className="text-xs text-[#94A3B8] mt-1">Choose the AI model for this chat session.</p>
           </div>
+          <div className="mb-4 w-full">
+            <label className="label mb-1">Session Type</label>
+            <Select
+              classNamePrefix="react-select"
+              options={[
+                { value: 'conversation', label: 'Conversation' },
+                { value: 'fixed_context', label: 'Fixed Context' }
+              ]}
+              value={{ value: sessionType, label: sessionType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') }}
+              onChange={opt => setSessionType((opt as any)?.value)}
+              styles={selectStyles}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+            />
+            <p className="text-xs text-[#94A3B8] mt-1">Select the type of session you want to create.</p>
+          </div>
+          {sessionType !== 'conversation' && (
+            <div className="mb-4 w-full">
+              <label className="label mb-1">Context <span className="text-[#64748B]">(required)</span></label>
+              <textarea
+                value={context}
+                onChange={e => setContext(e.target.value)}
+                placeholder="Enter context for this session..."
+                className="w-full p-3 rounded-lg border border-[#334155] bg-[#1E293B] text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#3B82F6] resize-none"
+                rows={4}
+                style={{ background: 'var(--color-input-bg)', color: 'white', borderColor: 'var(--color-input-border)' }}
+              />
+              <p className="text-xs text-[#94A3B8] mt-1">Provide context that will guide the AI for this session.</p>
+            </div>
+          )}
           <div className="flex w-full justify-end gap-2 mt-6">
             <button
               type="button"
@@ -253,7 +297,7 @@ export const CreateSessionModal: React.FC<CreateSessionModalProps> = ({ isOpen, 
             <button
               type="submit"
               className="btn-primary min-w-[140px]"
-              disabled={createMutation.isPending || !selectedModel}
+              disabled={createMutation.isPending || !selectedModel || (sessionType !== 'conversation' && !context.trim())}
             >
               {createMutation.isPending ? 'Creating...' : 'Create Session'}
             </button>

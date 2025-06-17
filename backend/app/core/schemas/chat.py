@@ -2,12 +2,13 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
 from uuid import UUID
-
+from app.core.database.models import SessionType
 class ChatSessionCreate(BaseModel):
     provider: str = Field(..., description="LLM provider (e.g., openai, anthropic)")
     model: str = Field(..., description="Model name (e.g., gpt-4, claude-3-opus)")
     title: Optional[str] = Field(None, description="Optional session title")
-
+    session_type: Optional[SessionType] = Field(SessionType.CONVERSATION.value, description="Session type")
+    context: Optional[str] = Field(None, description="Context for fixed context sessions")
 
 class ChatSessionUpdate(BaseModel):
     title: Optional[str] = Field(None, description="New session title")

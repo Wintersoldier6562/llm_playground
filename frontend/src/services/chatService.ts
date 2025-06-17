@@ -21,6 +21,8 @@ export interface ChatSession {
   is_active: boolean;
   created_at: string;
   updated_at: string | null;
+  session_type?: string;
+  context?: string;
   messages?: ChatMessage[];  // Optional because it's only included when requested
 }
 
@@ -28,6 +30,8 @@ export interface CreateSessionRequest {
   model: string;
   provider: string;
   title?: string;
+  session_type: string;
+  context?: string;
 }
 
 export interface ChatMessage {

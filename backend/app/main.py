@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.api import api_router
 from app.core.database.session import AsyncSessionLocal
-from app.core.database.init_db import init_db
+from app.core.database.migrations import run_migrations
 from app.core.utils import get_ip_address
 import asyncio
 import redis.asyncio as redis
@@ -14,7 +14,8 @@ app = FastAPI(
     title="AI Model Playground API",
     description="API for comparing responses from different AI models",
     version="1.0.0",
-    openapi_url=None,
+    openapi_url="/api_docs",
+    debug=True
 )
 
 # Configure CORS
@@ -30,17 +31,18 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on startup."""
+    """Initialize database and run migrations on startup."""
     try:
-        async with AsyncSessionLocal() as session:
-            await init_db(session)
+        # Run database migrations
+        await run_migrations()
+        
         # Redis connection
         redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
         redis_connection = await redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
         # Configure Rate Limiting
         await FastAPILimiter.init(redis_connection, identifier=get_ip_address)
     except Exception as e:
-        print(f"Error initializing database: {str(e)}")
+        print(f"Error during startup: {str(e)}")
         raise
 
 @app.get("/")

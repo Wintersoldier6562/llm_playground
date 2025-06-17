@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     POSTGRES_SERVER: str = "db"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "llm_compare"
+    POSTGRES_DB: str = "postgres"
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0

@@ -225,13 +225,26 @@ const ChatWindow = ({ session }: ChatWindowProps) => {
             <p className="text-sm text-[#B6C2CF]">
               {session.model} ({session.provider})
             </p>
-            {!session.is_active && (
-              <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-[#39424D] text-[#B6C2CF] rounded">
-                Inactive
-              </span>
+            <div className="flex items-center gap-2 mt-2">
+              {session.session_type && (
+                <span className="inline-block px-2 py-0.5 text-xs bg-[#3B82F6]/20 text-[#3B82F6] rounded border border-[#3B82F6]/30">
+                  {session.session_type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                </span>
+              )}
+              {!session.is_active && (
+                <span className="inline-block px-2 py-0.5 text-xs bg-[#39424D] text-[#B6C2CF] rounded">
+                  Inactive
+                </span>
+              )}
+            </div>
+            {session.context && (
+              <div className="mt-2 p-2 bg-[#1E293B] rounded border border-[#334155]">
+                <p className="text-xs text-[#94A3B8] mb-1">Context:</p>
+                <p className="text-sm text-[#B6C2CF]">{session.context}</p>
+              </div>
             )}
             {isStreaming && (
-              <div className="text-xs text-[#579DFF] mt-1">
+              <div className="text-xs text-[#579DFF] mt-2">
                 AI is typing...
                 <Button
                   appearance="danger"

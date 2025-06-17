@@ -4,6 +4,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 from app.core.database.base_class import Base
+import enum
+class SessionType(enum.Enum):
+    CONVERSATION = "conversation"
+    FIXED_CONTEXT = "fixed_context"
 
 class User(Base):
     __tablename__ = "users"
@@ -56,6 +60,9 @@ class ChatSession(Base):
     model = Column(String, nullable=False)     # e.g., "gpt-4", "claude-3-opus"
     title = Column(String, nullable=True)      # Optional session title
     is_active = Column(Boolean, default=True)
+    session_type = Column(String, nullable=False, server_default=SessionType.CONVERSATION.value, 
+                         info={'choices': [session_type.value for session_type in SessionType]})
+    context = Column(String, nullable=True, default="", server_default="", server_length=1000000)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

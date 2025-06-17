@@ -12,8 +12,9 @@ from app.core.schemas.chat import (
     ChatSessionUpdate,
     ChatSessionResponse,
     ChatSessionList,
-    ChatCompletionRequest,
+    ChatCompletionRequest
 )
+from app.core.database.models import SessionType
 from uuid import UUID
 import json
 
@@ -31,9 +32,11 @@ async def create_chat_session(
     Create a new chat session.
     """
     try:
+        print(data, flush=True)
         session = await chat_service.create_session(db, current_user.id, data, model_service)
         return session
     except ValueError as e:
+        print(e, flush=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -173,12 +176,19 @@ async def chat_completion(
             role="user",
             content=request.message
         )
-
+        messages = []
+        request_message = request.message
         # Get conversation history and format messages
-        messages = [{"role": m.role, "content": m.content} for m in session.messages]
-        messages.append({"role": "user", "content": request.message})
-        if request.system_message:
-            messages.insert(0, {"role": "system", "content": request.system_message})
+        if session.session_type == SessionType.CONVERSATION:
+            messages = [{"role": m.role, "content": m.content} for m in session.messages]
+
+        if session.session_type == SessionType.FIXED_CONTEXT.value:
+            context = ("You are a helpful assistant that can answer questions and help with tasks. You are given a fixed context and a user message. You need to answer the user message based on the context."
+                "The context is: " + session.context + "\n\n" + "The user message is: " + request.message
+            )
+            request_message = context
+        
+        messages.append({"role": "user", "content": request_message})
 
         async def generate() -> AsyncGenerator[str, None]:
             try:

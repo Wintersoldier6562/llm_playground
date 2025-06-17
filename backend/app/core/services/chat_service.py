@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, and_, func
 from sqlalchemy.orm import selectinload
-from app.core.database.models import ChatSession, ChatMessage
+from app.core.database.models import ChatSession, ChatMessage, SessionType
 from app.core.schemas.chat import (
     ChatSessionCreate
 )
@@ -32,7 +32,6 @@ class ChatService:
     ) -> ChatSession:
         # Validate provider and model
         models = await model_service.get_models()
-        print(models, flush=True)
         if data.provider not in [model.provider for model in models]:
             raise ValueError(f"Unsupported provider: {data.provider}")
         provider_models = next((provider.models for provider in models if provider.provider == data.provider), [])
@@ -43,16 +42,21 @@ class ChatService:
         if total_sessions >= self.MAX_SESSIONS_PER_USER:
             raise ValueError(f"Maximum number of sessions ({self.MAX_SESSIONS_PER_USER}) reached")
 
+        print(data.session_type, flush=True)
+        if data.context is None:
+            data.context = ""
         # Create new session
         session = ChatSession(
             user_id=user_id,
             provider=data.provider,
             model=data.model,
-            title=data.title
+            title=data.title,
+            session_type=data.session_type.value,
+            context=data.context
         )
         db.add(session)
         await db.commit()
-        
+        print(session, flush=True)
         # Refresh session with messages relationship loaded
         query = select(ChatSession).options(selectinload(ChatSession.messages)).where(ChatSession.id == session.id)
         result = await db.execute(query)

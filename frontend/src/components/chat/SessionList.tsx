@@ -65,6 +65,11 @@ export const SessionList = ({ onSelectSession, selectedSessionId, onNewChat }: S
                 <p className="text-sm text-[#B6C2CF] mt-1">
                   {session.model} ({session.provider})
                 </p>
+                {session.session_type && (
+                  <span className="inline-block mt-2 px-2 py-0.5 text-xs bg-[#3B82F6]/20 text-[#3B82F6] rounded border border-[#3B82F6]/30">
+                    {session.session_type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#B6C2CF]" viewBox="0 0 20 20" fill="currentColor">

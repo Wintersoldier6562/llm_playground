@@ -37,6 +37,7 @@ export interface CreateSessionRequest {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  created_at: string;
 }
 
 export interface SessionResponse extends Omit<ChatSession, 'messages'> {

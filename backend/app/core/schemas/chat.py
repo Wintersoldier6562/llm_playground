@@ -27,6 +27,7 @@ class ChatSessionInDB(ChatSessionCreate):
 class ChatMessage(BaseModel):
     role: str = Field(..., description="Message role (user, assistant, system)")
     content: str = Field(..., description="Message content")
+    created_at: datetime
 
 class ChatSessionResponse(ChatSessionInDB):
     messages: Optional[List[ChatMessage]] = Field(None, description="Current session messages")

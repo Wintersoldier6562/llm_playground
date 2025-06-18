@@ -72,10 +72,20 @@ const ChatWindow = ({ session }: ChatWindowProps) => {
 
   const messages = React.useMemo(() => {
     const baseMessages = sessionData?.messages || [];
+    let allMessages = [...baseMessages];
+    
     if (isStreaming && streamingMessage) {
-      return [...baseMessages, { role: 'assistant', content: streamingMessage }];
+      allMessages.push({ 
+        role: 'assistant' as const, 
+        content: streamingMessage,
+        created_at: new Date().toISOString(),
+      });
     }
-    return baseMessages;
+    
+    // Sort messages by created_at in ascending order (oldest first)
+    return allMessages.sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
   }, [sessionData?.messages, isStreaming, streamingMessage]);
 
   useEffect(() => {
@@ -98,6 +108,7 @@ const ChatWindow = ({ session }: ChatWindowProps) => {
     const userMessage: ChatMessage = {
       role: 'user' as const,
       content: inputMessage.trim(),
+      created_at: new Date().toISOString(),
     };
 
     queryClient.setQueryData(['session', session.id], (old: any) => ({
@@ -177,7 +188,8 @@ const ChatWindow = ({ session }: ChatWindowProps) => {
             ...(old?.messages || []),
             {
               role: 'assistant',
-              content: 'Sorry, there was an error processing your message. Please try again.'
+              content: 'Sorry, there was an error processing your message. Please try again.',
+              created_at: new Date().toISOString(),
             }
           ],
         }));

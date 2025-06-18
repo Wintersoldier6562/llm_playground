@@ -179,7 +179,7 @@ async def chat_completion(
         messages = []
         request_message = request.message
         # Get conversation history and format messages
-        if session.session_type == SessionType.CONVERSATION:
+        if session.session_type == SessionType.CONVERSATION.value:
             messages = [{"role": m.role, "content": m.content} for m in session.messages]
 
         if session.session_type == SessionType.FIXED_CONTEXT.value:

@@ -77,7 +77,8 @@ class ChatService:
             )
         )
         if include_messages:
-            query = query.options(selectinload(ChatSession.messages).order_by(ChatMessage.created_at))
+            query = query.options(selectinload(ChatSession.messages))
+            query = query.order_by(ChatSession.created_at)
             
         result = await db.execute(query)
         return result.scalar_one_or_none()

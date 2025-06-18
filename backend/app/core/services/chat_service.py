@@ -77,7 +77,7 @@ class ChatService:
             )
         )
         if include_messages:
-            query = query.options(selectinload(ChatSession.messages))
+            query = query.options(selectinload(ChatSession.messages).order_by(ChatMessage.created_at))
             
         result = await db.execute(query)
         return result.scalar_one_or_none()
@@ -171,7 +171,7 @@ class ChatService:
         db: AsyncSession,
         session_id: UUID
     ) -> List[ChatMessage]:
-        query = select(ChatMessage).where(ChatMessage.session_id == session_id)
+        query = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at)
         result = await db.execute(query)
         return result.scalars().all()
 
